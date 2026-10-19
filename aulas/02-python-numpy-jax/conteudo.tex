@@ -2,318 +2,431 @@
 %  Aula 2 — conteúdo das notas (incluído por notas.tex e pela apostila)
 %  Figuras: use apenas o nome (a02_...), o graphicspath resolve.
 % =====================================================================
-\aula{2}{Introdução a Python, NumPy e JAX}[Python, NumPy e JAX]
+\aula{2}{Computação aplicada: de Python ao aprendizado de máquina}[Computação aplicada]
 
 \begin{intuicao}[title={Objetivos da aula}]
 Ao final desta aula você deve ser capaz de: (i) escrever pequenos programas em
-Python usando variáveis, coleções, condicionais, laços e funções; (ii)
-representar dados econômicos como vetores e matrizes NumPy e operar sobre eles
-sem laços explícitos; (iii) usar o JAX para obter derivadas exatas de funções
-escritas em código, o mecanismo que, nas Aulas 4 e 5, vai treinar nossos modelos.
+Python com variáveis, listas, dicionários, condicionais, laços e funções;
+(ii) usar o \pkg{NumPy} para fazer contas com vetores e matrizes inteiros,
+inclusive o MQO; (iii) ler, filtrar, agrupar e resumir uma base de dados com o
+\pkg{pandas}; (iv) explicar por que, com sorteio, a diferença de médias estima
+o efeito de um programa, e por que um grupo de comparação inadequado produz
+viés; (v) treinar um modelo por gradiente descendente com o \pkg{JAX}; e
+(vi) usar o roteiro \py{fit}/\py{predict} do \pkg{scikit-learn}.
 \end{intuicao}
 
-\section{Por que programar?}
+\section{A pergunta: o programa funcionou?}
 
-Considere uma tarefa rotineira: calcular a inflação acumulada em 12 meses a
-partir da variação mensal do IPCA. Numa planilha, isso exige fórmulas
-arrastadas, células de referência e, a cada novo mês, uma intervenção manual.
-O procedimento funciona, mas tem três fragilidades: é difícil de \emph{reproduzir}
-(quem garante que a fórmula da linha 214 é igual à da linha 213?), difícil de
-\emph{escalar} (repetir para 27 unidades da federação ou 400 subitens) e difícil
-de \emph{auditar} (as decisões ficam escondidas em células).
+Imagine que você trabalha numa secretaria de trabalho e precisa avaliar um
+programa de qualificação: as pessoas que passaram por ele ganham mais do que
+ganhariam sem ele? A pergunta é simples de formular e difícil de responder,
+porque nunca observamos a mesma pessoa nas duas situações. Esta aula responde a
+uma pergunta desse tipo com dados reais e, no caminho, constrói a caixa de
+ferramentas computacional que usaremos no resto do curso.
 
-Um programa resolve as três fragilidades de uma vez: o cálculo é descrito uma
-única vez, aplicado a quantas séries forem necessárias e fica registrado em texto
-que pode ser lido, versionado e revisado. Além disso, Python é hoje a
-linguagem em que praticamente todas as bibliotecas de aprendizado de máquina
-são escritas, o que torna esse investimento inicial indispensável para o
-restante do curso.
+A escolha de aprender as ferramentas resolvendo um problema não é acidental.
+Fluência em programação vem de usar a linguagem para fazer algo que importa, e
+não de decorar comandos. Por isso cada ferramenta entra no momento em que
+precisamos dela: Python para organizar alguns casos, \pkg{NumPy} para fazer as
+contas sobre todos, \pkg{pandas} para ler e resumir a base, \pkg{JAX} para
+treinar um modelo e \pkg{scikit-learn} para usar modelos prontos.
 
-\section{O ambiente de trabalho}
+\section{O experimento NSW e a pergunta de LaLonde}
 
-Usaremos o \pkg{Google Colab}, um serviço que executa \emph{notebooks Jupyter}
-no navegador. Um notebook é uma sequência de \emph{células}, que podem conter
-código Python ou texto formatado (Markdown, inclusive com equações em \LaTeX).
-Por trás do notebook há um \emph{kernel}, um processo Python que guarda o
-estado da sessão: uma variável criada numa célula continua disponível nas
-células seguintes.
+O \emph{National Supported Work Demonstration} (NSW) foi um programa americano
+dos anos 1970 que oferecia emprego subsidiado e acompanhamento a pessoas com
+muita dificuldade de entrar no mercado de trabalho. O detalhe que o tornou
+famoso entre economistas é que as vagas foram \emph{sorteadas} entre os
+candidatos: os sorteados formam o grupo de \emph{tratados}; os não sorteados,
+o grupo de \emph{controle}.
 
-\begin{atencao}
-O estado do kernel depende da \emph{ordem em que as células foram executadas},
-não da ordem em que aparecem na página. Executar uma célula do meio, voltar e
-reexecutar outra é a principal fonte de resultados ``impossíveis'' em
-notebooks. Antes de concluir qualquer análise, use \emph{Ambiente de execução
-$\to$ Reiniciar e executar tudo}.
-\end{atencao}
+\textcite{lalonde1986} usou o experimento como gabarito. Primeiro, o sorteio dá
+o efeito do programa. Depois, finge-se que não houve sorteio: os controles são
+trocados por pessoas de pesquisas domiciliares (a CPS e o PSID) e aplicam-se os
+métodos econométricos da época. A conclusão, em geral desanimadora, foi que
+esses métodos frequentemente se afastavam muito do gabarito, e o artigo se
+tornou uma referência na avaliação de políticas. Usamos a subamostra de homens
+de \textcite{dehejia1999}, que mantém quem tem a renda de 1974 informada: 185
+tratados e 260 controles, além de 15.992 homens da CPS. As variáveis estão na
+\cref{tab:a02-variaveis}.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Variáveis da base NSW (subamostra de Dehejia e Wahba).}
+  \label{tab:a02-variaveis}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Variável & Significado \\
+    \midrule
+    \texttt{treat} & 1 se foi sorteado para o programa \\
+    \texttt{age}, \texttt{education} & idade e anos de estudo \\
+    \texttt{black}, \texttt{hispanic}, \texttt{married} & \emph{dummies} de raça/etnia e estado civil \\
+    \texttt{nodegree} & 1 se não concluiu o ensino médio \\
+    \texttt{re74}, \texttt{re75} & renda anual antes do programa (US\$) \\
+    \texttt{re78} & renda anual depois do programa (US\$): o resultado \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Resultados potenciais}
+
+Para pensar com precisão, imagine que cada pessoa $i$ tem dois resultados
+\emph{potenciais}: $y_i(1)$, a renda que teria se participasse do programa, e
+$y_i(0)$, a renda que teria se não participasse. O efeito do programa sobre
+ela é $y_i(1) - y_i(0)$. O problema é que só observamos um dos dois: para os
+tratados ($D_i = 1$) vemos $y_i(1)$; para os controles ($D_i = 0$), $y_i(0)$.
+
+\begin{definicao}[title={Efeito médio sobre os tratados}]
+O efeito médio do programa sobre quem participou é
+\[
+  \text{ATT} = \E\big[y_i(1) - y_i(0) \,\big|\, D_i = 1\big].
+\]
+\end{definicao}
+
+A comparação ingênua das médias observadas se decompõe em duas partes, o
+efeito e o \emph{viés de seleção} (VS):
+\begin{equation}\label{eq:a02-decomposicao}
+  \begin{aligned}
+    \E[y_i \mid D_i=1] - \E[y_i \mid D_i=0] &= \text{ATT} + \text{VS}, \\
+    \text{VS} &= \E[y_i(0) \mid D_i=1] - \E[y_i(0) \mid D_i=0] .
+  \end{aligned}
+\end{equation}
+O viés de seleção compara a renda \emph{sem programa} dos dois grupos. Se quem
+participa já ganharia menos de qualquer jeito, a diferença observada subestima
+o efeito. Com sorteio, os dois grupos são iguais em média em tudo, inclusive em
+$y_i(0)$, e o viés de seleção é zero: a diferença de médias estima o ATT.
+
+\begin{conexao}
+A \cref{eq:a02-decomposicao} é a versão de avaliação de políticas do viés de
+variável omitida. Quando a CPS substitui os controles, a ``variável omitida'' é
+tudo o que distingue os dois grupos e afeta a renda: idade, escolaridade,
+histórico de emprego.
+\end{conexao}
 
 \section{Python essencial}
 
-\subsection{Variáveis e tipos}
-
-Uma variável é um nome associado a um valor. O Python infere o tipo a partir
-do valor atribuído:
+Começamos com cinco participantes reais, digitados à mão. Cada variável guarda
+um valor com um \emph{tipo}: inteiro (\py{int}), número com decimais
+(\py{float}), verdadeiro ou falso (\py{bool}) e texto (\py{str}). Uma
+\emph{lista} guarda vários valores em ordem; um \emph{dicionário} guarda
+valores com nome. Uma lista de dicionários já é uma pequena tabela:
 
 \begin{codigo}
-selic = 15.0            # float  (número real)
-n_meses = 12            # int    (inteiro)
-pais = "Brasil"         # str    (texto)
-acima_da_meta = True    # bool   (verdadeiro/falso)
+pessoas = [
+    {"idade": 37, "educ": 11, "tratado": True,  "re78": 9930.05},
+    {"idade": 22, "educ": 9,  "tratado": True,  "re78": 3595.89},
+    {"idade": 30, "educ": 12, "tratado": True,  "re78": 24909.45},
+    {"idade": 34, "educ": 12, "tratado": False, "re78": 2113.72},
+    {"idade": 24, "educ": 10, "tratado": False, "re78": 7618.64},
+]
 
-taxa_mensal = (1 + selic / 100) ** (1 / n_meses) - 1
-print(f"Selic mensal equivalente: {taxa_mensal:.4%}")
+def media(valores):
+    return sum(valores) / len(valores)
+
+def diferenca_medias(pessoas):
+    tratados = [p["re78"] for p in pessoas if p["tratado"]]
+    controles = [p["re78"] for p in pessoas if not p["tratado"]]
+    return media(tratados) - media(controles)
+
+diferenca_medias(pessoas)   # 7945.6
 \end{codigo}
 
-O operador \py{**} é a potência; \py{/} sempre devolve um \py{float}; \py{//}
-é a divisão inteira e \py{%} o resto. A construção \py{f"..."} (\emph{f-string})
-interpola valores em textos, com controle de formatação após os dois-pontos.
+A função \py{diferenca_medias} usa duas \emph{list comprehensions}, que montam
+uma lista numa linha: \py{[o_que for item in lista if condição]}. A mesma conta
+poderia ser feita com um laço \py{for} e um \py{if}, somando a renda de cada
+grupo; o notebook faz das duas formas.
 
 \begin{atencao}
-Computadores representam números reais em ponto flutuante, com precisão finita.
-Por isso \py{0.1 + 0.2 == 0.3} resulta em \py{False}. Compare números reais com
-uma tolerância, por exemplo \py{math.isclose(a, b)}. Essa limitação reaparece,
-em escala maior, quando discutirmos a estabilidade numérica do MQO.
+Em Python, a contagem começa em zero: \py{rendas[0]} é o primeiro elemento.
+E a \emph{indentação} (os quatro espaços) faz parte da sintaxe: é ela que diz o
+que está dentro de um \py{if}, de um \py{for} ou de uma função. Um espaço a
+mais ou a menos muda o programa.
 \end{atencao}
 
-\subsection{Coleções}
+Com cinco pessoas, a diferença de US\$ 7.946 não quer dizer nada: trocar uma
+única pessoa mudaria muito o número. Para usar a base inteira, precisamos de
+ferramentas melhores.
 
-Uma \emph{lista} guarda uma sequência ordenada de valores, acessados por posição
-(começando em zero). Um \emph{dicionário} guarda pares chave--valor:
+\section{NumPy: contas com vetores inteiros}
 
-\begin{codigo}
-ipca = [0.16, 0.43, 0.56, 0.43]   # variação mensal, %
-ipca[0], ipca[-1], ipca[1:3]      # primeiro, último, fatia
-ipca.append(0.26)
-
-metas = {"centro": 3.0, "tolerancia": 1.5}
-teto = metas["centro"] + metas["tolerancia"]
-\end{codigo}
-
-Note que a fatia \py{ipca[1:3]} inclui o índice 1 e \emph{exclui} o índice 3.
-
-\subsection{Condicionais, laços e funções}
-
-O fluxo de um programa é controlado por condicionais (\py{if}/\py{elif}/\py{else})
-e laços (\py{for}, \py{while}). Em Python, os blocos são delimitados pela
-\emph{indentação}. Funções, definidas com \py{def}, empacotam um cálculo para
-reutilização. Como exemplo, a inflação acumulada de $T$ meses é
-\begin{equation}\label{eq:a01-acum}
-  \pi^{\text{acum}} = \prod_{t=1}^{T}(1+\pi_t) - 1,
-\end{equation}
-que traduzimos diretamente para um laço:
-
-\begin{codigo}
-def acumulada(taxas_pct):
-    """Inflação acumulada (%) a partir de taxas mensais (%)."""
-    fator = 1.0
-    for pi in taxas_pct:
-        fator = fator * (1 + pi / 100)
-    return 100 * (fator - 1)
-
-def avaliar(inflacao_12m, centro=3.0, tolerancia=1.5):
-    if inflacao_12m > centro + tolerancia:
-        return "acima do teto"
-    elif inflacao_12m < centro - tolerancia:
-        return "abaixo do piso"
-    return "dentro do intervalo"
-\end{codigo}
-
-A segunda função ilustra \emph{argumentos com valor padrão}: \py{avaliar(5.2)}
-usa a meta de 3\% com tolerância de 1,5 ponto percentual, mas
-\py{avaliar(5.2, centro=4.5)} permite analisar outro regime de metas.
-
-\section{NumPy: computação vetorizada}
-
-\subsection{Arrays}
-
-O laço em \cref{eq:a01-acum} está correto, mas é lento: a cada iteração o
-interpretador verifica tipos, aloca objetos e despacha operações. O \pkg{NumPy}
-\parencite{harris2020} resolve isso com o \emph{array}, um bloco contíguo de
-memória com elementos do mesmo tipo, sobre o qual operações inteiras são
-executadas por código compilado. Trocar laços explícitos por operações sobre
-arrays é o que chamamos de \emph{vetorizar}. A \cref{fig:a01-laco} mostra a
-diferença de tempo para o cálculo da inflação acumulada.
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.72\linewidth]{a02_laco_vs_vetor}
-  \caption{Tempo para calcular \cref{eq:a01-acum} com um laço em Python puro e com
-  \py{np.prod}. Escalas logarítmicas; a distância vertical constante indica uma
-  razão aproximadamente constante entre os tempos.}
-  \label{fig:a01-laco}
-\end{figure}
-
-Todo array tem uma forma (\py{shape}). Ao longo do curso, adotaremos a
-convenção usual em econometria e em aprendizado de máquina: \textbf{linhas são
-observações e colunas são variáveis}. Uma base com $n$ observações e $p$
-variáveis explicativas é, portanto, uma matriz $\mX \in \R^{n\times p}$.
+O \pkg{NumPy} guarda números em \emph{arrays} e opera sobre eles de uma vez,
+sem laços explícitos (\emph{vetorização}). Uma comparação como
+\py{re78 > 5000} devolve um array de \py{True}/\py{False}, chamado
+\emph{máscara booleana}, que serve para selecionar elementos:
 
 \begin{codigo}
 import numpy as np
+re78 = np.array([p["re78"] for p in pessoas])
+tratado = np.array([p["tratado"] for p in pessoas])
 
-X = np.array([[1, 2.0], [1, 3.5], [1, 1.2]])   # shape (3, 2)
-X[:, 1]                 # segunda coluna
-X[X[:, 1] > 1.5]        # filtro booleano: só as linhas com x > 1,5
-acum = 100 * (np.prod(1 + np.array(ipca) / 100) - 1)   # sem laço
+re78[tratado].mean() - re78[~tratado].mean()   # o ~ inverte a máscara
 \end{codigo}
 
-\subsection{Broadcasting}
+Além de mais curta, a versão vetorizada é muito mais rápida: no notebook,
+calcular a média de um milhão de rendas simuladas com o NumPy foi cerca de 150
+vezes mais rápido do que com um laço. A razão é que o laço é interpretado linha
+a linha pelo Python, enquanto o NumPy executa a operação inteira em código
+compilado.
 
-Quando dois arrays de formas diferentes participam de uma operação, o NumPy
-tenta compatibilizá-los ``esticando'' o menor ao longo dos eixos que faltam.
-Esse mecanismo, o \emph{broadcasting}, torna triviais operações como padronizar
-as colunas de uma matriz:
+Arrays com duas dimensões são matrizes: \py{X.shape} dá o número de linhas e de
+colunas, \py{X.T} é a transposta e \py{@} é o produto matricial. O estimador de
+MQO, $\hvbeta = (\mX\T\mX)^{-1}\mX\T\vy$, vira uma linha:
 
 \begin{codigo}
-X_pad = (X - X.mean(axis=0)) / X.std(axis=0)
+X = np.column_stack([np.ones(5), tratado])   # intercepto e dummy
+beta = np.linalg.solve(X.T @ X, X.T @ re78)
 \end{codigo}
 
-Aqui \py{X.mean(axis=0)} tem forma \py{(2,)}, uma média por coluna, e é
-subtraído de cada uma das linhas de \py{X}. A padronização vai ser essencial
-na Aula 4, quando veremos que o gradiente descendente converge muito mais rápido
-com variáveis na mesma escala.
+\begin{atencao}
+Prefira \py{np.linalg.solve(A, b)} a \py{np.linalg.inv(A) @ b}. Resolver o
+sistema linear é mais rápido e numericamente mais estável do que calcular a
+inversa explicitamente.
+\end{atencao}
 
-\subsection{Álgebra matricial e MQO}
+\section{pandas: a base inteira}
 
-O operador \py{@} realiza o produto matricial. Isso permite escrever o
-estimador de mínimos quadrados ordinários quase como no papel.
+O \pkg{pandas} organiza dados em \emph{DataFrames}: tabelas com colunas de nome
+e tipo, em que cada coluna é um array do NumPy por dentro. A função
+\py{pd.read_stata} lê arquivos do Stata (\texttt{.dta}) direto da internet:
 
-\begin{conexao}
-No modelo linear $\vy = \mX\vbeta + \ve$, o estimador de MQO minimiza a soma
-dos quadrados dos resíduos e satisfaz as \emph{equações normais}
-\begin{equation}\label{eq:a01-normais}
-  (\mX\T\mX)\,\hvbeta = \mX\T\vy .
+\begin{codigo}
+import pandas as pd
+URL = "https://users.nber.org/~rdehejia/data/"
+nsw = pd.read_stata(URL + "nsw_dw.dta")
+cps = pd.read_stata(URL + "cps_controls.dta")
+\end{codigo}
+
+\begin{atencao}
+Todo notebook que baixa dados deve ter um plano~B. O do curso envolve a leitura
+num bloco \py{try}/\py{except} e, se a internet falhar, gera uma base simulada
+com o mesmo formato, para a aula não travar. Os números da base simulada, é
+claro, diferem dos reais.
+\end{atencao}
+
+As operações mais usadas são poucas. \py{df["col"]} seleciona uma coluna;
+\py{df[condição]} filtra linhas com uma máscara booleana, como no NumPy;
+\py{df["nova"] = ...} cria uma coluna, calculada de uma vez para todas as linhas;
+\py{df.groupby("g")["col"].mean()} separa por grupo, calcula e junta; e
+\py{pd.concat([a, b])} empilha tabelas. Com elas montamos a \emph{tabela de
+balanceamento}, que compara as médias das covariáveis entre os grupos
+(\cref{tab:a02-balanco}).
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Médias das covariáveis antes do programa. No experimento, tratados e
+  controles se parecem; os homens da CPS são outra população.}
+  \label{tab:a02-balanco}
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    & Tratados & Controles (sorteio) & CPS \\
+    \midrule
+    Idade (anos)              & 25,8  & 25,1  & 33,2 \\
+    Escolaridade (anos)       & 10,3  & 10,1  & 12,0 \\
+    Negros (\%)               & 84    & 83    & 7 \\
+    Casados (\%)              & 19    & 15    & 71 \\
+    Sem ensino médio (\%)     & 71    & 83    & 30 \\
+    Renda em 1974 (US\$)      & 2.096 & 2.107 & 14.017 \\
+    Renda em 1975 (US\$)      & 1.532 & 1.267 & 13.651 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Avaliação: diferença de médias e o grupo de comparação errado}
+
+\subsection{Com sorteio}
+
+Nos 445 participantes, a renda média em 1978 foi de US\$ 6.349 entre os
+tratados e US\$ 4.555 entre os controles: o efeito estimado é de
+\textbf{US\$ 1.794 por ano}. O mesmo número sai de uma regressão.
+
+\begin{exemplo}[title={Diferença de médias = MQO com uma \emph{dummy}}]
+No modelo $y_i = a + b\,D_i + \varepsilon_i$, o MQO minimiza
+$S(a,b) = \sum_i (y_i - a - b D_i)^2$. As condições de primeira ordem são
+\begin{equation}\label{eq:a02-cpo}
+  \sum_{i} (y_i - a - b D_i) = 0, \qquad \sum_{i} D_i\,(y_i - a - b D_i) = 0 .
 \end{equation}
-\end{conexao}
-
-\begin{codigo}
-rng = np.random.default_rng(42)
-n = 500
-x = rng.normal(size=n)
-X = np.column_stack([np.ones(n), x])
-y = 1.0 + 2.0 * x + rng.normal(size=n)
-
-beta = np.linalg.solve(X.T @ X, X.T @ y)    # equações normais
-\end{codigo}
-
-\begin{atencao}
-Embora o livro-texto escreva $\hvbeta = (\mX\T\mX)^{-1}\mX\T\vy$, calcular a
-inversa explicitamente é mais lento e amplifica erros de arredondamento quando
-$\mX\T\mX$ é mal condicionada (variáveis quase colineares). Prefira
-\py{np.linalg.solve} ou, melhor ainda, \py{np.linalg.lstsq}, que usa uma
-decomposição ortogonal de $\mX$.
-\end{atencao}
-
-\section{JAX: NumPy que deriva e compila}
-
-O \pkg{JAX} \parencite{bradbury2018} oferece uma interface praticamente idêntica
-à do NumPy (\py{import jax.numpy as jnp}) e acrescenta \emph{transformações de
-funções}: recebem uma função Python e devolvem outra função.
-
-\begin{description}
-  \item[\py{jax.grad}] devolve a função gradiente, calculada por diferenciação
-        automática;
-  \item[\py{jax.jit}] compila a função com o XLA, executando-a de forma
-        otimizada em CPU, GPU ou TPU;
-  \item[\py{jax.vmap}] vetoriza uma função escrita para um único ponto,
-        aplicando-a a um lote inteiro sem laços.
-\end{description}
-
-Como cada transformação devolve uma função, elas podem ser encadeadas
-(\cref{fig:a01-jax}). A combinação \py{jax.jit(jax.grad(f))}, que produz um
-gradiente compilado, é exatamente o que precisaremos para treinar modelos.
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.8\linewidth]{a02_jax_transformacoes}
-  \caption{As transformações do JAX recebem uma função e devolvem outra, e por isso se compõem.}
-  \label{fig:a01-jax}
-\end{figure}
-
-\begin{atencao}
-Para que essas transformações funcionem, o JAX impõe duas disciplinas:
-arrays são \emph{imutáveis} (use \py{x = x.at[i].set(v)} em vez de
-\py{x[i] = v}) e números aleatórios são gerados a partir de uma \emph{chave}
-explícita (\py{jax.random.key(0)}), e não de um estado global.
-\end{atencao}
-
-\subsection{Diferenciação automática}
-
-Há três maneiras de um computador obter derivadas. A \emph{diferenciação
-numérica} aproxima $f'(x) \approx [f(x+h)-f(x)]/h$; é simples, mas imprecisa e
-custosa em muitas dimensões. A \emph{diferenciação simbólica} manipula
-expressões como um sistema de álgebra computacional; é exata, mas as expressões
-crescem rapidamente e não lidam bem com laços e condicionais. A
-\emph{diferenciação automática} \parencite{baydin2018} registra as operações
-elementares efetivamente executadas pelo programa e aplica a regra da cadeia
-sobre elas, obtendo derivadas exatas (a menos do arredondamento) com custo
-comparável ao de avaliar a própria função.
-
-\begin{exemplo}
-Com a utilidade CRRA $u(c) = c^{1-\gamma}/(1-\gamma)$, a utilidade marginal
-é $u'(c) = c^{-\gamma}$. O JAX a obtém sem que precisemos derivar à mão
-(\cref{fig:a01-crra}):
-\begin{codigo}
-import jax, jax.numpy as jnp
-gamma = 2.0
-u = lambda c: c**(1 - gamma) / (1 - gamma)
-du = jax.grad(u)
-du(1.5)                             # 0.4444... = 1.5 ** -2
-jax.vmap(du)(jnp.linspace(0.5, 3, 6))   # em vários pontos de uma vez
-\end{codigo}
+A segunda só envolve os $n_1$ tratados e dá $a + b = \bar y_1$. Separando a
+primeira por grupo, a parte dos tratados é a segunda equação, que vale zero; sobra
+$\sum_{D_i=0}(y_i - a) = 0$, isto é, $a = \bar y_0$. Logo
+\[
+  \hat a = \bar y_0, \qquad \hat b = \bar y_1 - \bar y_0 .
+\]
+O intercepto é a média dos controles e o coeficiente da \emph{dummy} é a
+diferença de médias. A intuição: a constante que minimiza a soma dos quadrados
+dos desvios de um grupo é a média do grupo, e o modelo tem um parâmetro livre
+por grupo.
 \end{exemplo}
 
+Acrescentar as covariáveis à regressão quase não muda a estimativa (US\$ 1.676),
+como esperado: com sorteio, as covariáveis não estão correlacionadas com o
+tratamento.
+
+\subsection{Sem sorteio}
+
+Agora a pergunta de LaLonde: e se só tivéssemos os tratados e usássemos os
+homens da CPS como comparação? A diferença de médias passa a ser de
+\textbf{$-$US\$ 8.498}: o programa pareceria destruir renda. A
+\cref{tab:a02-balanco} e a \cref{fig:a02-re75} mostram o motivo: os homens da
+CPS são mais velhos, mais escolarizados, mais frequentemente casados e ganhavam
+cerca de nove vezes mais antes do programa. Na linguagem da
+\cref{eq:a02-decomposicao}, o viés de seleção é enorme e negativo.
+
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.85\linewidth]{a02_crra_grad}
-  \caption{Utilidade CRRA ($\gamma=2$) e sua derivada obtida com
-  \py{jax.grad}, comparada à expressão analítica.}
-  \label{fig:a01-crra}
+  \includegraphics[width=\linewidth]{a02_nsw_re75}
+  \caption{Renda em 1975, antes do programa. À esquerda, tratados e controles do
+  experimento têm distribuições quase iguais. À direita, os homens da CPS
+  ganhavam muito mais; a pilha em US\$ 25 mil é o teto da pesquisa, que não
+  divulga rendas acima dele.}
+  \label{fig:a02-re75}
 \end{figure}
 
-\subsection{O gradiente de uma função de perda}
+Controlar pelas covariáveis numa regressão ajuda muito, mas não resolve: o
+coeficiente do tratamento vai a US\$ 699, ainda longe dos US\$ 1.794 do
+experimento (\cref{tab:a02-efeitos}). A regressão linear impõe uma forma
+funcional e extrapola para regiões em que quase não há tratados, como a de
+rendas altas. Na Aula~6 voltaremos a esse problema com ferramentas de
+aprendizado de máquina.
 
-O uso que realmente nos interessa é derivar uma \emph{função de perda} em
-relação aos \emph{parâmetros} de um modelo. Para o modelo linear com perda
-quadrática,
-\begin{equation}\label{eq:a01-perda}
-  \loss(\vbeta) = \frac{1}{n}\norm{\vy - \mX\vbeta}^2,
-  \qquad
-  \grad_{\vbeta}\loss(\vbeta) = -\frac{2}{n}\mX\T(\vy - \mX\vbeta).
+\begin{table}[ht]
+  \centering\small
+  \caption{Efeito do NSW sobre a renda de 1978 segundo diferentes comparações.}
+  \label{tab:a02-efeitos}
+  \begin{tabular}{@{}lr@{}}
+    \toprule
+    Comparação & Efeito estimado (US\$) \\
+    \midrule
+    Experimento: diferença de médias            & 1.794 \\
+    Experimento: MQO com covariáveis            & 1.676 \\
+    Tratados $\times$ CPS: diferença de médias  & $-$8.498 \\
+    Tratados $\times$ CPS: MQO com covariáveis  & 699 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{JAX: derivadas e gradiente descendente}
+
+O MQO tem fórmula fechada, mas a maior parte dos modelos de aprendizado de
+máquina não tem. Eles são treinados descendo a função de perda passo a passo, e
+para isso é preciso calcular derivadas. O \pkg{JAX} tem a mesma interface do
+\pkg{NumPy} e acrescenta \py{jax.grad}, que recebe uma função escrita em Python
+e devolve a função derivada, calculada de forma exata por diferenciação
+automática \parencite{baydin2018}.
+
+A derivada aponta para onde a função sobe. Andando um pouco no sentido
+contrário, ela desce. Para um vetor de parâmetros $\vtheta$ e uma perda
+$\loss$, a regra do \emph{gradiente descendente} é
+\begin{equation}\label{eq:a02-gd}
+  \vtheta \leftarrow \vtheta - \lr\,\nabla_{\vtheta}\loss(\vtheta),
 \end{equation}
-
-\begin{conexao}
-Igualar o gradiente em \cref{eq:a01-perda} a zero recupera exatamente as
-equações normais \cref{eq:a01-normais}. O MQO resolve esse sistema de uma vez;
-o gradiente descendente, tema da Aula 4, chega ao mesmo ponto dando passos
-sucessivos na direção $-\grad_{\vbeta}\loss$. A vantagem do segundo caminho é
-que ele continua funcionando quando o modelo deixa de ser linear e não há
-fórmula fechada, como nas redes neurais da Aula 5.
-\end{conexao}
+em que $\lr$ é a \emph{taxa de aprendizado}, o tamanho do passo. No notebook,
+$\loss$ é o erro quadrático médio do modelo $\widehat{re78} = a + b\cdot treat$
+(renda em mil US\$), e o treino inteiro cabe em poucas linhas:
 
 \begin{codigo}
-def perda(beta, X, y):
-    r = y - X @ beta
-    return jnp.mean(r ** 2)
+import jax, jax.numpy as jnp
+def eqm(params):
+    a, b = params
+    return jnp.mean((y - a - b * t) ** 2)
 
-grad_perda = jax.jit(jax.grad(perda))   # derivada em relação ao 1º argumento
-grad_perda(jnp.zeros(2), X, y)
+grad_eqm = jax.grad(eqm)
+params = jnp.array([0.0, 0.0])
+for _ in range(60):
+    params = params - 0.5 * grad_eqm(params)
+# params ~ [4.555, 1.794]: o mesmo resultado do MQO
 \end{codigo}
+
+\begin{conexao}
+O gradiente do EQM é, a menos do fator $-2/n$, o lado esquerdo das condições
+de primeira ordem da \cref{eq:a02-cpo}. O gradiente descendente para quando o
+gradiente zera, isto é, exatamente na solução de MQO. Para a regressão linear,
+ele é um caminho mais longo para o mesmo lugar; para modelos sem fórmula
+fechada, é o único caminho.
+\end{conexao}
+
+O tamanho do passo importa (\cref{fig:a02-gd}). Com $\lr = 0{,}1$ o EQM cai
+devagar; com $\lr = 0{,}5$ converge em poucos passos; com $\lr = 1$ o passo é
+grande demais, os parâmetros ``pulam'' o vale e o EQM explode. Escolher o passo,
+e preparar os dados para que um bom passo exista, é tema da Aula~4.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.72\linewidth]{a02_gd_eta}
+  \caption{Erro quadrático médio ao longo do treino por gradiente descendente,
+  para três taxas de aprendizado.}
+  \label{fig:a02-gd}
+\end{figure}
+
+\section{scikit-learn: modelos prontos}
+
+Todo modelo do \pkg{scikit-learn} \parencite{pedregosa2011} segue o mesmo
+roteiro: criar o modelo, \py{fit} nos dados de treino e \py{predict} em dados
+novos. Essa uniformidade permite trocar de modelo mudando uma linha.
+
+\subsection{Prever a renda}
+
+Na CPS, separamos 30\% dos homens para teste e treinamos modelos para prever a
+renda de 1978 a partir das covariáveis. Prevendo a média para todos, o erro
+típico (RMSE) no teste é de 9,55 mil dólares; a regressão linear o reduz para
+6,93 mil, e uma floresta aleatória chega a 6,95 mil, um empate. Dois fatos
+explicam o resultado. A renda de 1975 sozinha carrega quase toda a informação
+útil, e a relação com ela é aproximadamente linear. Além disso, as pilhas de
+rendas iguais a zero e no teto da pesquisa limitam o que qualquer modelo
+consegue prever.
+
+\begin{atencao}
+O modelo mais sofisticado nem sempre vence. Compare sempre com uma referência
+ingênua (a média) e com a regressão linear. E lembre que coeficientes e
+``importâncias'' de modelos preditivos descrevem padrões úteis para prever, não
+efeitos causais.
+\end{atencao}
+
+\subsection{Dá para prever quem foi tratado?}
+
+Um uso de aprendizado de máquina muito valioso em avaliação de políticas é o
+diagnóstico: se, olhando só para as covariáveis, um modelo consegue adivinhar
+quem foi tratado, os grupos não são comparáveis. A regressão logística prevê a
+probabilidade de ser tratado, a mesma ideia do \emph{escore de propensão}
+\parencite{dehejia1999}.
+
+No experimento, o modelo não separa os grupos: no conjunto de teste do notebook,
+a probabilidade média prevista é 0,43 entre os tratados e 0,42 entre os controles.
+É o sorteio funcionando. Na comparação com a CPS, ele separa com facilidade:
+0,27 entre os tratados e 0,01 entre os homens da CPS (\cref{fig:a02-logit}).
+O diagnóstico confirma o viés da seção anterior e sugere um caminho de correção:
+comparar os tratados apenas com quem tem probabilidade parecida de ser tratado.
+O Exercício~6 da lista explora essa ideia.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{a02_logit_tratado}
+  \caption{Probabilidade prevista de ser tratado por um logit nas covariáveis
+  (ajustado na amostra inteira). No experimento, as distribuições se sobrepõem;
+  na comparação com a CPS, quase todos os não tratados têm probabilidade perto
+  de zero.}
+  \label{fig:a02-logit}
+\end{figure}
 
 \section{Resumo e leituras}
 
 \begin{itemize}[nosep]
-  \item Python oferece os blocos básicos: tipos, coleções, condicionais, laços
-        e funções.
-  \item O NumPy representa dados como arrays e substitui laços por operações
-        vetorizadas; \py{@} e \py{np.linalg} trazem a álgebra matricial.
-  \item O JAX mantém a interface do NumPy e acrescenta \py{grad}, \py{jit} e
-        \py{vmap}.
-  \item O gradiente da função de perda conecta a econometria (equações
-        normais) ao treinamento de modelos (gradiente descendente).
+  \item Python oferece os blocos básicos: tipos, listas, dicionários,
+        condicionais, laços e funções.
+  \item O \pkg{NumPy} substitui laços por operações vetorizadas e traz a álgebra
+        matricial; o MQO cabe em uma linha.
+  \item O \pkg{pandas} lê, filtra, agrupa e empilha bases de dados.
+  \item Com sorteio, a diferença de médias, que é o coeficiente de uma
+        \emph{dummy} no MQO, estima o efeito do programa (US\$ 1.794 no NSW).
+  \item Sem sorteio, o viés de seleção pode dominar: com a CPS, o sinal inverte.
+  \item O gradiente descendente chega ao MQO sem fórmula, se o passo for bem
+        escolhido; o \pkg{JAX} calcula os gradientes.
+  \item O \pkg{scikit-learn} padroniza o roteiro \py{fit}/\py{predict}; modelos
+        preditivos também servem para diagnosticar comparações.
 \end{itemize}
 
-\noindent\textbf{Leituras sugeridas.} Para quem nunca programou,
-\textcite[caps.~1--10]{downey2016}. Sobre arrays, \textcite{harris2020}. Sobre
-diferenciação automática, a introdução de \textcite{baydin2018}. A seção
-\emph{JAX -- The Sharp Bits} da documentação oficial lista as armadilhas mais
-comuns.
+\noindent\textbf{Leituras sugeridas.} Para quem está começando a programar,
+\textcite[caps.~1--10]{downey2016} e os cursos gratuitos do Kaggle Learn
+(\emph{Python}, \emph{Pandas} e \emph{Intro to Machine Learning}). Sobre o
+experimento, o artigo original de \textcite{lalonde1986} e a reanálise de
+\textcite{dehejia1999}. Sobre arrays, \textcite{harris2020}; sobre
+diferenciação automática, \textcite{baydin2018}.

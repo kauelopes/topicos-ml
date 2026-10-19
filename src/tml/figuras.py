@@ -10,11 +10,11 @@ aulas/NN-*/figs/aNN_<nome>.pdf. O prefixo evita colisões na apostila.
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from tml import estilo
 
@@ -27,71 +27,79 @@ def _pasta(aula: str) -> Path:
 
 
 # ---------------------------------------------------------------------
-# Aula 02 — Python, NumPy e JAX
+# Aula 02 — Computação aplicada (experimento NSW / LaLonde)
 # ---------------------------------------------------------------------
 def aula02() -> None:
     import jax
     import jax.numpy as jnp
+    from sklearn.linear_model import LogisticRegression
+
+    from tml import dados
 
     destino = _pasta("02")
+    C = estilo.CORES
+    nsw, cps = dados.nsw()
+    covs = ["age", "education", "black", "hispanic", "married", "nodegree", "re74", "re75"]
+    tratados = nsw[nsw["treat"] == 1]
 
-    # (1) Utilidade CRRA e utilidade marginal obtida por jax.grad
-    gamma = 2.0
-
-    def u(c):
-        return c ** (1 - gamma) / (1 - gamma)
-
-    du = jax.vmap(jax.grad(u))
-    c = jnp.linspace(0.3, 3.0, 200)
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 3.0))
-    ax1.plot(c, u(c), color=estilo.CORES["azul"])
-    ax1.set(title=r"$u(c)$", xlabel="consumo $c$")
-    ax2.plot(c, du(c), color=estilo.CORES["destaque"], label="jax.grad(u)")
-    ax2.plot(c[::12], c[::12] ** (-gamma), "o", ms=4, color=estilo.CORES["primaria"],
-             label=r"analítica $c^{-\gamma}$")
-    ax2.set(title=r"$u'(c)$", xlabel="consumo $c$")
-    ax2.legend()
+    # (1) Renda antes do programa: tratados x controles do experimento x CPS
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.9), sharey=True)
+    bins = np.arange(0, 27, 2)
+    for ax, (comparacao, nome, cor) in zip(axs, [
+            (nsw[nsw["treat"] == 0], "controles do experimento", C["cinza"]),
+            (cps, "homens da CPS", C["azul"])]):
+        ax.hist(comparacao["re75"] / 1000, bins=bins, density=True, alpha=0.6,
+                color=cor, label=nome)
+        ax.hist(tratados["re75"] / 1000, bins=bins, density=True, alpha=0.6,
+                color=C["destaque"], label="tratados")
+        ax.set(xlabel="renda em 1975 (mil US$)")
+        ax.legend(fontsize=8)
+    axs[0].set(ylabel="densidade", title="Com sorteio")
+    axs[1].set(title="Sem sorteio")
     fig.tight_layout()
-    fig.savefig(destino / "a02_crra_grad.pdf")
+    fig.savefig(destino / "a02_nsw_re75.pdf")
     plt.close(fig)
 
-    # (2) Laço Python x operação vetorizada (NumPy): tempo por tamanho
-    def acumulada_laco(taxas):
-        fator = 1.0
-        for t in taxas:
-            fator *= 1 + t
-        return fator - 1
+    # (2) Gradiente descendente no EQM de re78 ~ a + b*treat, três passos
+    y = jnp.array(nsw["re78"].to_numpy() / 1000)
+    t = jnp.array(nsw["treat"].to_numpy())
 
-    def acumulada_vetor(taxas):
-        return np.prod(1 + taxas) - 1
+    def eqm(p):
+        return jnp.mean((y - p[0] - p[1] * t) ** 2)
 
-    def cronometrar(f, x, rep=5):
-        melhores = []
-        for _ in range(rep):
-            t0 = time.perf_counter()
-            f(x)
-            melhores.append(time.perf_counter() - t0)
-        return min(melhores)
-
-    rng = np.random.default_rng(0)
-    tamanhos = np.array([10**k for k in range(2, 8)])
-    t_laco, t_vetor = [], []
-    for n in tamanhos:
-        x = rng.normal(0.0, 0.002, size=n)  # média 0 evita overflow em n grande
-        t_laco.append(cronometrar(acumulada_laco, x))
-        t_vetor.append(cronometrar(acumulada_vetor, x))
-
-    fig, ax = plt.subplots(figsize=(5.6, 3.2))
-    ax.loglog(tamanhos, t_laco, "o-", label="laço for (Python puro)")
-    ax.loglog(tamanhos, t_vetor, "s-", label="np.prod (vetorizado)")
-    ax.set(xlabel="número de observações", ylabel="tempo (s)")
+    grad = jax.grad(eqm)
+    fig, ax = plt.subplots(figsize=(5.6, 3.0))
+    for eta, cor in [(0.1, C["azul"]), (0.5, C["verde"]), (1.0, C["vermelho"])]:
+        p, hist = jnp.zeros(2), []
+        for _ in range(30):
+            p = p - eta * grad(p)
+            hist.append(float(eqm(p)))
+        ax.plot(range(1, 31), hist, marker="o", ms=3, color=cor,
+                label=f"η = {eta}".replace(".", ","))
+    ax.set_yscale("log")
+    ax.set_ylim(40, 1e4)
+    ax.set(xlabel="passo", ylabel="EQM (escala log)")
     ax.legend()
-    razao = np.array(t_laco)[-1] / np.array(t_vetor)[-1]
-    ax.set_title(f"Vetorizado ≈ {razao:,.0f}× mais rápido com n = 10⁷".replace(",", "."),
-                 fontsize=10)
     fig.tight_layout()
-    fig.savefig(destino / "a02_laco_vs_vetor.pdf")
+    fig.savefig(destino / "a02_gd_eta.pdf")
+    plt.close(fig)
+
+    # (3) Probabilidade prevista de ser tratado (logit): experimento x CPS
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.9))
+    escala = np.array([1, 1, 1, 1, 1, 1, 1000, 1000])
+    for ax, (base, titulo) in zip(axs, [(nsw, "Experimento"),
+                                        (pd.concat([tratados, cps]), "Tratados × CPS")]):
+        X = base[covs] / escala
+        p = LogisticRegression(max_iter=5000).fit(X, base["treat"]).predict_proba(X)[:, 1]
+        bins = np.linspace(0, 1, 21)
+        tr = base["treat"].to_numpy() == 1
+        ax.hist(p[~tr], bins=bins, density=True, alpha=0.6, color=C["cinza"], label="não tratados")
+        ax.hist(p[tr], bins=bins, density=True, alpha=0.6, color=C["destaque"], label="tratados")
+        ax.set(title=titulo, xlabel="probabilidade prevista de ser tratado")
+    axs[0].set(ylabel="densidade")
+    axs[0].legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(destino / "a02_logit_tratado.pdf")
     plt.close(fig)
 
 
