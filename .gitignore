@@ -27,3 +27,6 @@ aulas/03-*/
 aulas/04-*/
 aulas/05-*/
 aulas/06-*/
+
+# Figuras exportadas ao executar os notebooks
+aulas/*/notebooks/*.png
