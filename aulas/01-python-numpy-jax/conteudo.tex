@@ -1,0 +1,319 @@
+% =====================================================================
+%  Aula 1 — conteúdo das notas (incluído por notas.tex e pela apostila)
+%  Figuras: use apenas o nome (a01_...), o graphicspath resolve.
+% =====================================================================
+\aula{1}{Introdução a Python, NumPy e JAX}[Python, NumPy e JAX]
+
+\begin{intuicao}[title={Objetivos da aula}]
+Ao final desta aula você deve ser capaz de: (i) escrever pequenos programas em
+Python usando variáveis, coleções, condicionais, laços e funções; (ii)
+representar dados econômicos como vetores e matrizes NumPy e operar sobre eles
+sem laços explícitos; (iii) usar o JAX para obter derivadas exatas de funções
+escritas em código, o mecanismo que, nas Aulas 4 e 5, vai treinar nossos modelos.
+\end{intuicao}
+
+\section{Por que programar?}
+
+Considere uma tarefa rotineira: calcular a inflação acumulada em 12 meses a
+partir da variação mensal do IPCA. Numa planilha, isso exige fórmulas
+arrastadas, células de referência e, a cada novo mês, uma intervenção manual.
+O procedimento funciona, mas tem três fragilidades: é difícil de \emph{reproduzir}
+(quem garante que a fórmula da linha 214 é igual à da linha 213?), difícil de
+\emph{escalar} (repetir para 27 unidades da federação ou 400 subitens) e difícil
+de \emph{auditar} (as decisões ficam escondidas em células).
+
+Um programa resolve as três fragilidades de uma vez: o cálculo é descrito uma
+única vez, aplicado a quantas séries forem necessárias e fica registrado em texto
+que pode ser lido, versionado e revisado. Além disso, Python é hoje a
+linguagem em que praticamente todas as bibliotecas de aprendizado de máquina
+são escritas, o que torna esse investimento inicial indispensável para o
+restante do curso.
+
+\section{O ambiente de trabalho}
+
+Usaremos o \pkg{Google Colab}, um serviço que executa \emph{notebooks Jupyter}
+no navegador. Um notebook é uma sequência de \emph{células}, que podem conter
+código Python ou texto formatado (Markdown, inclusive com equações em \LaTeX).
+Por trás do notebook há um \emph{kernel}, um processo Python que guarda o
+estado da sessão: uma variável criada numa célula continua disponível nas
+células seguintes.
+
+\begin{atencao}
+O estado do kernel depende da \emph{ordem em que as células foram executadas},
+não da ordem em que aparecem na página. Executar uma célula do meio, voltar e
+reexecutar outra é a principal fonte de resultados ``impossíveis'' em
+notebooks. Antes de concluir qualquer análise, use \emph{Ambiente de execução
+$\to$ Reiniciar e executar tudo}.
+\end{atencao}
+
+\section{Python essencial}
+
+\subsection{Variáveis e tipos}
+
+Uma variável é um nome associado a um valor. O Python infere o tipo a partir
+do valor atribuído:
+
+\begin{codigo}
+selic = 15.0            # float  (número real)
+n_meses = 12            # int    (inteiro)
+pais = "Brasil"         # str    (texto)
+acima_da_meta = True    # bool   (verdadeiro/falso)
+
+taxa_mensal = (1 + selic / 100) ** (1 / n_meses) - 1
+print(f"Selic mensal equivalente: {taxa_mensal:.4%}")
+\end{codigo}
+
+O operador \py{**} é a potência; \py{/} sempre devolve um \py{float}; \py{//}
+é a divisão inteira e \py{%} o resto. A construção \py{f"..."} (\emph{f-string})
+interpola valores em textos, com controle de formatação após os dois-pontos.
+
+\begin{atencao}
+Computadores representam números reais em ponto flutuante, com precisão finita.
+Por isso \py{0.1 + 0.2 == 0.3} resulta em \py{False}. Compare números reais com
+uma tolerância, por exemplo \py{math.isclose(a, b)}. Essa limitação reaparece,
+em escala maior, quando discutirmos a estabilidade numérica do MQO.
+\end{atencao}
+
+\subsection{Coleções}
+
+Uma \emph{lista} guarda uma sequência ordenada de valores, acessados por posição
+(começando em zero). Um \emph{dicionário} guarda pares chave--valor:
+
+\begin{codigo}
+ipca = [0.16, 0.43, 0.56, 0.43]   # variação mensal, %
+ipca[0], ipca[-1], ipca[1:3]      # primeiro, último, fatia
+ipca.append(0.26)
+
+metas = {"centro": 3.0, "tolerancia": 1.5}
+teto = metas["centro"] + metas["tolerancia"]
+\end{codigo}
+
+Note que a fatia \py{ipca[1:3]} inclui o índice 1 e \emph{exclui} o índice 3.
+
+\subsection{Condicionais, laços e funções}
+
+O fluxo de um programa é controlado por condicionais (\py{if}/\py{elif}/\py{else})
+e laços (\py{for}, \py{while}). Em Python, os blocos são delimitados pela
+\emph{indentação}. Funções, definidas com \py{def}, empacotam um cálculo para
+reutilização. Como exemplo, a inflação acumulada de $T$ meses é
+\begin{equation}\label{eq:a01-acum}
+  \pi^{\text{acum}} = \prod_{t=1}^{T}(1+\pi_t) - 1,
+\end{equation}
+que traduzimos diretamente para um laço:
+
+\begin{codigo}
+def acumulada(taxas_pct):
+    """Inflação acumulada (%) a partir de taxas mensais (%)."""
+    fator = 1.0
+    for pi in taxas_pct:
+        fator = fator * (1 + pi / 100)
+    return 100 * (fator - 1)
+
+def avaliar(inflacao_12m, centro=3.0, tolerancia=1.5):
+    if inflacao_12m > centro + tolerancia:
+        return "acima do teto"
+    elif inflacao_12m < centro - tolerancia:
+        return "abaixo do piso"
+    return "dentro do intervalo"
+\end{codigo}
+
+A segunda função ilustra \emph{argumentos com valor padrão}: \py{avaliar(5.2)}
+usa a meta de 3\% com tolerância de 1,5 ponto percentual, mas
+\py{avaliar(5.2, centro=4.5)} permite analisar outro regime de metas.
+
+\section{NumPy: computação vetorizada}
+
+\subsection{Arrays}
+
+O laço em \cref{eq:a01-acum} está correto, mas é lento: a cada iteração o
+interpretador verifica tipos, aloca objetos e despacha operações. O \pkg{NumPy}
+\parencite{harris2020} resolve isso com o \emph{array}, um bloco contíguo de
+memória com elementos do mesmo tipo, sobre o qual operações inteiras são
+executadas por código compilado. Trocar laços explícitos por operações sobre
+arrays é o que chamamos de \emph{vetorizar}. A \cref{fig:a01-laco} mostra a
+diferença de tempo para o cálculo da inflação acumulada.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.72\linewidth]{a01_laco_vs_vetor}
+  \caption{Tempo para calcular \cref{eq:a01-acum} com um laço em Python puro e com
+  \py{np.prod}. Escalas logarítmicas; a distância vertical constante indica uma
+  razão aproximadamente constante entre os tempos.}
+  \label{fig:a01-laco}
+\end{figure}
+
+Todo array tem uma forma (\py{shape}). Ao longo do curso, adotaremos a
+convenção usual em econometria e em aprendizado de máquina: \textbf{linhas são
+observações e colunas são variáveis}. Uma base com $n$ observações e $p$
+variáveis explicativas é, portanto, uma matriz $\mX \in \R^{n\times p}$.
+
+\begin{codigo}
+import numpy as np
+
+X = np.array([[1, 2.0], [1, 3.5], [1, 1.2]])   # shape (3, 2)
+X[:, 1]                 # segunda coluna
+X[X[:, 1] > 1.5]        # filtro booleano: só as linhas com x > 1,5
+acum = 100 * (np.prod(1 + np.array(ipca) / 100) - 1)   # sem laço
+\end{codigo}
+
+\subsection{Broadcasting}
+
+Quando dois arrays de formas diferentes participam de uma operação, o NumPy
+tenta compatibilizá-los ``esticando'' o menor ao longo dos eixos que faltam.
+Esse mecanismo, o \emph{broadcasting}, torna triviais operações como padronizar
+as colunas de uma matriz:
+
+\begin{codigo}
+X_pad = (X - X.mean(axis=0)) / X.std(axis=0)
+\end{codigo}
+
+Aqui \py{X.mean(axis=0)} tem forma \py{(2,)}, uma média por coluna, e é
+subtraído de cada uma das linhas de \py{X}. A padronização vai ser essencial
+na Aula 4, quando veremos que o gradiente descendente converge muito mais rápido
+com variáveis na mesma escala.
+
+\subsection{Álgebra matricial e MQO}
+
+O operador \py{@} realiza o produto matricial. Isso permite escrever o
+estimador de mínimos quadrados ordinários quase como no papel.
+
+\begin{conexao}
+No modelo linear $\vy = \mX\vbeta + \ve$, o estimador de MQO minimiza a soma
+dos quadrados dos resíduos e satisfaz as \emph{equações normais}
+\begin{equation}\label{eq:a01-normais}
+  (\mX\T\mX)\,\hvbeta = \mX\T\vy .
+\end{equation}
+\end{conexao}
+
+\begin{codigo}
+rng = np.random.default_rng(42)
+n = 500
+x = rng.normal(size=n)
+X = np.column_stack([np.ones(n), x])
+y = 1.0 + 2.0 * x + rng.normal(size=n)
+
+beta = np.linalg.solve(X.T @ X, X.T @ y)    # equações normais
+\end{codigo}
+
+\begin{atencao}
+Embora o livro-texto escreva $\hvbeta = (\mX\T\mX)^{-1}\mX\T\vy$, calcular a
+inversa explicitamente é mais lento e amplifica erros de arredondamento quando
+$\mX\T\mX$ é mal condicionada (variáveis quase colineares). Prefira
+\py{np.linalg.solve} ou, melhor ainda, \py{np.linalg.lstsq}, que usa uma
+decomposição ortogonal de $\mX$.
+\end{atencao}
+
+\section{JAX: NumPy que deriva e compila}
+
+O \pkg{JAX} \parencite{bradbury2018} oferece uma interface praticamente idêntica
+à do NumPy (\py{import jax.numpy as jnp}) e acrescenta \emph{transformações de
+funções}: recebem uma função Python e devolvem outra função.
+
+\begin{description}
+  \item[\py{jax.grad}] devolve a função gradiente, calculada por diferenciação
+        automática;
+  \item[\py{jax.jit}] compila a função com o XLA, executando-a de forma
+        otimizada em CPU, GPU ou TPU;
+  \item[\py{jax.vmap}] vetoriza uma função escrita para um único ponto,
+        aplicando-a a um lote inteiro sem laços.
+\end{description}
+
+Como cada transformação devolve uma função, elas podem ser encadeadas
+(\cref{fig:a01-jax}). A combinação \py{jax.jit(jax.grad(f))}, que produz um
+gradiente compilado, é exatamente o que precisaremos para treinar modelos.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\linewidth]{a01_jax_transformacoes}
+  \caption{As transformações do JAX recebem uma função e devolvem outra, e por isso se compõem.}
+  \label{fig:a01-jax}
+\end{figure}
+
+\begin{atencao}
+Para que essas transformações funcionem, o JAX impõe duas disciplinas:
+arrays são \emph{imutáveis} (use \py{x = x.at[i].set(v)} em vez de
+\py{x[i] = v}) e números aleatórios são gerados a partir de uma \emph{chave}
+explícita (\py{jax.random.key(0)}), e não de um estado global.
+\end{atencao}
+
+\subsection{Diferenciação automática}
+
+Há três maneiras de um computador obter derivadas. A \emph{diferenciação
+numérica} aproxima $f'(x) \approx [f(x+h)-f(x)]/h$; é simples, mas imprecisa e
+custosa em muitas dimensões. A \emph{diferenciação simbólica} manipula
+expressões como um sistema de álgebra computacional; é exata, mas as expressões
+crescem rapidamente e não lidam bem com laços e condicionais. A
+\emph{diferenciação automática} \parencite{baydin2018} registra as operações
+elementares efetivamente executadas pelo programa e aplica a regra da cadeia
+sobre elas, obtendo derivadas exatas (a menos do arredondamento) com custo
+comparável ao de avaliar a própria função.
+
+\begin{exemplo}
+Com a utilidade CRRA $u(c) = c^{1-\gamma}/(1-\gamma)$, a utilidade marginal
+é $u'(c) = c^{-\gamma}$. O JAX a obtém sem que precisemos derivar à mão
+(\cref{fig:a01-crra}):
+\begin{codigo}
+import jax, jax.numpy as jnp
+gamma = 2.0
+u = lambda c: c**(1 - gamma) / (1 - gamma)
+du = jax.grad(u)
+du(1.5)                             # 0.4444... = 1.5 ** -2
+jax.vmap(du)(jnp.linspace(0.5, 3, 6))   # em vários pontos de uma vez
+\end{codigo}
+\end{exemplo}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\linewidth]{a01_crra_grad}
+  \caption{Utilidade CRRA ($\gamma=2$) e sua derivada obtida com
+  \py{jax.grad}, comparada à expressão analítica.}
+  \label{fig:a01-crra}
+\end{figure}
+
+\subsection{O gradiente de uma função de perda}
+
+O uso que realmente nos interessa é derivar uma \emph{função de perda} em
+relação aos \emph{parâmetros} de um modelo. Para o modelo linear com perda
+quadrática,
+\begin{equation}\label{eq:a01-perda}
+  \loss(\vbeta) = \frac{1}{n}\norm{\vy - \mX\vbeta}^2,
+  \qquad
+  \grad_{\vbeta}\loss(\vbeta) = -\frac{2}{n}\mX\T(\vy - \mX\vbeta).
+\end{equation}
+
+\begin{conexao}
+Igualar o gradiente em \cref{eq:a01-perda} a zero recupera exatamente as
+equações normais \cref{eq:a01-normais}. O MQO resolve esse sistema de uma vez;
+o gradiente descendente, tema da Aula 4, chega ao mesmo ponto dando passos
+sucessivos na direção $-\grad_{\vbeta}\loss$. A vantagem do segundo caminho é
+que ele continua funcionando quando o modelo deixa de ser linear e não há
+fórmula fechada, como nas redes neurais da Aula 5.
+\end{conexao}
+
+\begin{codigo}
+def perda(beta, X, y):
+    r = y - X @ beta
+    return jnp.mean(r ** 2)
+
+grad_perda = jax.jit(jax.grad(perda))   # derivada em relação ao 1º argumento
+grad_perda(jnp.zeros(2), X, y)
+\end{codigo}
+
+\section{Resumo e leituras}
+
+\begin{itemize}[nosep]
+  \item Python oferece os blocos básicos: tipos, coleções, condicionais, laços
+        e funções.
+  \item O NumPy representa dados como arrays e substitui laços por operações
+        vetorizadas; \py{@} e \py{np.linalg} trazem a álgebra matricial.
+  \item O JAX mantém a interface do NumPy e acrescenta \py{grad}, \py{jit} e
+        \py{vmap}.
+  \item O gradiente da função de perda conecta a econometria (equações
+        normais) ao treinamento de modelos (gradiente descendente).
+\end{itemize}
+
+\noindent\textbf{Leituras sugeridas.} Para quem nunca programou,
+\textcite[caps.~1--10]{downey2016}. Sobre arrays, \textcite{harris2020}. Sobre
+diferenciação automática, a introdução de \textcite{baydin2018}. A seção
+\emph{JAX -- The Sharp Bits} da documentação oficial lista as armadilhas mais
+comuns.

@@ -1,0 +1,29 @@
+# LaTeX
+build/
+_minted*/
+*.synctex.gz
+
+# PDFs finais: distribuídos via GitHub Releases, não versionados
+dist/
+
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+.ipynb_checkpoints/
+
+# Dados brutos baixados (reprodutíveis via src/tml/dados.py)
+data/raw/
+
+# Sistema
+.DS_Store
+
+# Material privado do professor (fica só na máquina local)
+CLAUDE.md
+*_lab_solucao.ipynb
+
+# Aulas ainda em esboço: entram no repositório quando estiverem prontas
+aulas/03-*/
+aulas/04-*/
+aulas/05-*/
+aulas/06-*/

@@ -1,0 +1,148 @@
+% =====================================================================
+%  topicosml.sty — pacotes, notação e ambientes comuns a TODOS os
+%  documentos do curso (slides, notas, listas, apostila).
+%
+%  Requer LuaLaTeX (fontspec + unicode-math são carregados pela classe
+%  tmlnotas ou pelo tema beamer TML ANTES deste pacote).
+% =====================================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{topicosml}[2026/10/15 Topicos em ML - notacao e utilitarios]
+
+% ---------------------------------------------------------------------
+% Metadados do curso (altere aqui, vale para tudo)
+% ---------------------------------------------------------------------
+\newcommand{\tmlcurso}{Computação Aplicada à Economia: Tópicos em Aprendizado de Máquina}
+\newcommand{\tmlcursocurto}{Tópicos em Aprendizado de Máquina}
+\newcommand{\tmlautor}{Kauê Lopes de Moraes}
+\newcommand{\tmlsemestre}{2026}
+% Repositório no GitHub (usuario/repositorio) — usado pelos links do Colab
+\newcommand{\tmlrepo}{kauelopes/topicos-ml}
+\newcommand{\tmlbranch}{main}
+
+% ---------------------------------------------------------------------
+% Idioma e texto
+% ---------------------------------------------------------------------
+\RequirePackage[brazilian]{babel}
+\RequirePackage{csquotes}
+\RequirePackage{graphicx}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+\RequirePackage{xcolor}
+\graphicspath{{figs/}}
+
+% ---------------------------------------------------------------------
+% Matemática
+% ---------------------------------------------------------------------
+\RequirePackage{mathtools}
+% (amsmath vem com mathtools; unicode-math já foi carregado)
+
+% Conjuntos e operadores
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\tr}{tr}
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\newcommand{\T}{^{\mkern-1.5mu\mathsf{T}}} % transposta (⊤ falta na Fira Math)
+\newcommand{\eqdef}{\coloneqq}       % definição
+\newcommand{\iid}{\overset{\text{iid}}{\sim}}
+
+% Convenção tipográfica do curso:
+%   escalares: itálico (x, \beta)   vetores: negrito itálico (\vx, \vbeta)
+%   matrizes: negrito reto (\mX)    conjuntos/distribuições: caligráfico
+\newcommand{\vect}[1]{\symbfit{#1}}
+\newcommand{\mat}[1]{\symbf{#1}}
+\newcommand{\vx}{\vect{x}}
+\newcommand{\vy}{\vect{y}}
+\newcommand{\vw}{\vect{w}}
+\newcommand{\vb}{\vect{b}}
+\newcommand{\ve}{\vect{\varepsilon}}
+\newcommand{\vbeta}{\vect{\beta}}
+\newcommand{\vtheta}{\vect{\theta}}
+\newcommand{\hvbeta}{\hat{\vect{\beta}}}
+\newcommand{\mX}{\mat{X}}
+\newcommand{\mI}{\mat{I}}
+\newcommand{\mA}{\mat{A}}
+
+% Aprendizado de máquina
+\newcommand{\loss}{\mathcal{L}}          % função de perda
+\newcommand{\data}{\mathcal{D}}          % conjunto de dados
+\newcommand{\dtreino}{\data_{\text{treino}}}
+\newcommand{\dvalid}{\data_{\text{valid}}}
+\newcommand{\dteste}{\data_{\text{teste}}}
+\newcommand{\hf}{\hat{f}}               % função estimada
+\newcommand{\lr}{\eta}                  % taxa de aprendizado
+\newcommand{\MSE}{\operatorname{EQM}}   % erro quadrático médio
+\newcommand{\grad}{\nabla}
+\newcommand{\dd}{\mathop{}\!\mathrm{d}} % diferencial
+\newcommand{\pder}[2]{\frac{\partial #1}{\partial #2}}
+
+% ---------------------------------------------------------------------
+% Código
+% ---------------------------------------------------------------------
+% outputdir=build casa com o -outdir=build do latexmk (minted 2.x).
+% No minted 3.x a opção é desnecessária e inofensiva.
+\RequirePackage[outputdir=build]{minted}
+\setminted{
+  fontsize=\small,
+  breaklines,
+  autogobble,
+  tabsize=4,
+  style=friendly,
+}
+\newminted[codigo]{python}{}                        % \begin{codigo} ... \end{codigo}
+\newmintinline[py]{python}{}                         % \py{np.dot(a, b)}
+\newcommand{\pkg}[1]{\textsf{#1}}                    % nomes de bibliotecas
+\newcommand{\cmd}[1]{\texttt{#1}}
+
+% Link "Abrir no Colab" para um notebook do repositório
+%   \colab{aulas/01-python-numpy-jax/notebooks/01_demo.ipynb}{Demonstração}
+\newcommand{\colaburl}[1]{https://colab.research.google.com/github/\tmlrepo/blob/\tmlbranch/#1}
+\newcommand{\colab}[2]{%
+  \href{\colaburl{#1}}{\textcolor{tmlaccent}{\textsf{\small$\blacktriangleright$\,Abrir no Colab:}}~#2}}
+
+% ---------------------------------------------------------------------
+% Cores (mesma paleta do metropolis, para slides e notas conversarem)
+% ---------------------------------------------------------------------
+\definecolor{tmlprimary}{HTML}{23373B}   % azul petróleo escuro
+\definecolor{tmlaccent}{HTML}{EB811B}    % laranja
+\definecolor{tmlgreen}{HTML}{14B03D}
+\definecolor{tmlblue}{HTML}{2A6F97}
+\definecolor{tmlred}{HTML}{B22234}
+\definecolor{tmlgray}{HTML}{F2F2F2}
+
+% ---------------------------------------------------------------------
+% Caixas pedagógicas (funcionam em beamer e em texto corrido)
+% ---------------------------------------------------------------------
+\RequirePackage[most,minted]{tcolorbox}
+\tcbset{
+  tmlbase/.style={
+    enhanced, breakable, boxrule=0pt, arc=1pt, left=6pt, right=6pt,
+    top=4pt, bottom=4pt, fonttitle=\sffamily\bfseries\small,
+    colback=tmlgray, borderline west={3pt}{0pt}{#1},
+    coltitle=#1, colbacktitle=tmlgray, attach title to upper={\par\smallskip},
+  }
+}
+% Ponte com econometria/estatística — a "marca" do curso
+\newtcolorbox{conexao}[1][]{tmlbase=tmlblue, title={Conexão com a Econometria}, #1}
+% Definição formal
+\newtcolorbox{definicao}[1][]{tmlbase=tmlprimary, title={Definição}, #1}
+% Armadilhas comuns
+\newtcolorbox{atencao}[1][]{tmlbase=tmlred, title={Atenção}, #1}
+% Intuição / ideia-chave
+\newtcolorbox{intuicao}[1][]{tmlbase=tmlaccent, title={Intuição}, #1}
+% Exemplo econômico
+\newtcolorbox{exemplo}[1][]{tmlbase=tmlgreen, title={Exemplo}, #1}
+
+% ---------------------------------------------------------------------
+% Bibliografia
+% ---------------------------------------------------------------------
+\RequirePackage[backend=biber, style=authoryear, maxcitenames=2,
+                uniquelist=false, giveninits=true]{biblatex}
+\addbibresource{refs.bib}   % encontrado via BIBINPUTS (ver .latexmkrc)
+
+\endinput

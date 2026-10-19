@@ -1,0 +1,29 @@
+% =====================================================================
+%  Apostila — reúne o conteudo.tex de todas as aulas num só PDF.
+%  Para incluir/excluir uma aula, comente a linha correspondente.
+% =====================================================================
+\documentclass[apostila]{tmlnotas}
+
+\graphicspath{
+  {../aulas/01-python-numpy-jax/figs/}
+  {../aulas/02-o-que-e-ml/figs/}
+  {../aulas/03-treino-teste-validacao/figs/}
+  {../aulas/04-gradiente-descendente/figs/}
+  {../aulas/05-arvores-redes/figs/}
+  {../aulas/06-casos-economia/figs/}
+}
+
+\begin{document}
+\capaapostila
+\tableofcontents
+
+\input{../aulas/01-python-numpy-jax/conteudo}
+\input{../aulas/02-o-que-e-ml/conteudo}
+\input{../aulas/03-treino-teste-validacao/conteudo}
+\input{../aulas/04-gradiente-descendente/conteudo}
+\input{../aulas/05-arvores-redes/conteudo}
+\input{../aulas/06-casos-economia/conteudo}
+
+\clearpage
+\printbibliography[heading=bibintoc, title={Referências}]
+\end{document}

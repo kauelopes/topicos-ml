@@ -1,0 +1,165 @@
+% Lista de exercícios — gera lista.pdf e lista-solucao.pdf
+\documentclass[lista]{tmlnotas}
+\usepackage{exercicios}
+
+\begin{document}
+\aula{2}{O que é Aprendizado de Máquina?}[O que é ML?]
+
+\noindent Os exercícios 1 a 4 são conceituais; os exercícios 5 e 6 pedem código.
+Níveis: \nivel{1}~básico, \nivel{2}~intermediário, \nivel{3}~desafio.
+\ifsolucao\textbf{Esta versão contém as soluções.}\fi
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Traduzindo vocabulários]{1}
+Reescreva a frase abaixo usando o vocabulário de aprendizado de máquina:
+\begin{quote}
+``Estimamos os coeficientes do modelo usando a amostra de 2015 a 2022, com o
+salário como variável dependente e escolaridade, idade e região como
+variáveis explicativas, e calculamos os valores ajustados para 2023.''
+\end{quote}
+\end{exercicio}
+\begin{solucao}
+``\emph{Treinamos} o modelo (ajustamos seus \emph{pesos}) usando o
+\emph{conjunto de treino} de 2015 a 2022, com o salário como \emph{alvo} e
+escolaridade, idade e região como \emph{atributos}, e geramos
+\emph{previsões} para 2023.'' Note que, como 2023 não foi usado no treino, os
+valores de 2023 são previsões fora da amostra, e não ``valores ajustados'' no
+sentido econométrico.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Que tipo de tarefa?]{1}
+Para cada situação, diga se é aprendizado supervisionado ou não supervisionado;
+se supervisionado, se é regressão ou classificação; e se o interesse principal é
+um problema de $\hat y$ ou de $\hat\beta$.
+\begin{enumerate}[label=(\alph*)]
+  \item Um banco quer estimar o valor de um imóvel dado em garantia a partir de
+        suas características.
+  \item Um pesquisador quer saber quanto o salário mínimo afeta o emprego formal
+        em municípios pequenos.
+  \item A Receita quer selecionar as declarações com maior chance de conter
+        irregularidades para fiscalizar.
+  \item Uma varejista quer segmentar seus clientes a partir do histórico de compras.
+  \item Um analista quer prever a taxa de desocupação do próximo trimestre.
+  \item Um ministério quer saber se um programa de qualificação aumentou a renda dos participantes.
+\end{enumerate}
+\end{exercicio}
+\begin{solucao}
+\begin{tabular}{@{}clll@{}}
+  \toprule
+  & Tipo & Tarefa & Interesse \\
+  \midrule
+  (a) & supervisionado     & regressão     & $\hat y$ \\
+  (b) & (não é tarefa de ML) & ---         & $\hat\beta$ (causal) \\
+  (c) & supervisionado     & classificação & $\hat y$ \\
+  (d) & não supervisionado & agrupamento   & estrutura \\
+  (e) & supervisionado     & regressão (série temporal) & $\hat y$ \\
+  (f) & (não é tarefa de ML) & ---         & $\hat\beta$ (causal) \\
+  \bottomrule
+\end{tabular}
+
+Em (b) e (f) a pergunta é contrafactual: o que aconteceria \emph{se} o salário
+mínimo (ou a participação no programa) fosse diferente. Uma boa previsão do
+emprego ou da renda não responde a isso; é preciso uma estratégia de
+identificação. O ML pode ajudar em etapas auxiliares (Aula 6), mas não substitui
+o desenho de pesquisa.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Tarefa, experiência, desempenho]{1}
+Descreva $T$, $E$ e $P$ (no sentido de Mitchell) para um sistema que prevê, a
+cada mês, a variação do IPCA do mês seguinte. Por que o desempenho $P$ deve ser
+calculado apenas em meses que o sistema não usou para aprender?
+\end{exercicio}
+\begin{solucao}
+$T$: prever a variação do IPCA do mês $t+1$ com a informação disponível em $t$.
+$E$: a série histórica do IPCA e de outras variáveis (câmbio, preços de
+\emph{commodities}, expectativas). $P$: por exemplo, o erro absoluto médio das
+previsões. O desempenho deve ser medido em meses não usados no treino porque o
+que interessa é a qualidade da previsão para o futuro, que por definição não foi
+visto; medir nos meses de treino premiaria modelos que decoram a amostra.
+Em séries temporais, ``não usados'' significa também \emph{posteriores} ao
+treino (Aula 3).
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Ficha de formulação]{2}
+Escolha um problema econômico de seu interesse e preencha a ficha de formulação
+vista em aula (decisão, unidade, alvo, atributos, tarefa, métrica). Em seguida,
+liste um atributo que seria tentador incluir mas que causaria \emph{vazamento},
+e explique por quê.
+\end{exercicio}
+\begin{solucao}
+Resposta aberta. Exemplo: \textbf{Decisão:} um município quer oferecer tutoria
+a alunos com maior risco de abandonar o ensino médio. \textbf{Unidade:} um
+aluno no início do ano letivo. \textbf{Alvo:} abandono até o fim do ano
+(sim/não). \textbf{Atributos:} idade-série, faltas e notas do ano anterior,
+escola, distância até a escola. \textbf{Tarefa:} classificação.
+\textbf{Métrica:} entre os alunos sinalizados (limitados pelo orçamento de
+tutoria), que fração de fato abandonaria? \textbf{Vazamento:} ``número de
+faltas no ano corrente'' acumulado até dezembro. É altamente preditivo, mas só
+está disponível depois que o abandono já ocorreu.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Previsão estável, coeficientes instáveis]{2}
+Reproduza a figura da aula: gere $B=1000$ amostras com $n=100$ de
+$y = x_1 + x_2 + \varepsilon$, em que $(x_1, x_2)$ é normal bivariada com
+correlação $\rho$ e $\varepsilon\sim\mathcal{N}(0,1)$. Em cada amostra estime o
+modelo por MQO e guarde $\hat\beta_1$ e a previsão em $x_0$.
+\begin{enumerate}[label=(\alph*)]
+  \item Compare o desvio-padrão de $\hat\beta_1$ e de $\hat y(x_0)$ para
+        $x_0=(1,1)$ e $\rho \in \{0;\ 0{,}5;\ 0{,}98\}$.
+  \item Repita com $x_0 = (1,-1)$ e $\rho = 0{,}98$. O que acontece com a
+        estabilidade da previsão? Por quê?
+\end{enumerate}
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+import numpy as np
+rng = np.random.default_rng(0)
+
+def simular(rho, x0, B=1000, n=100):
+    cov = [[1, rho], [rho, 1]]
+    betas, prevs = [], []
+    for _ in range(B):
+        X = rng.multivariate_normal([0, 0], cov, n)
+        y = X.sum(axis=1) + rng.normal(size=n)
+        Xd = np.column_stack([np.ones(n), X])
+        b = np.linalg.lstsq(Xd, y, rcond=None)[0]
+        betas.append(b[1]); prevs.append(np.r_[1, x0] @ b)
+    return np.std(betas), np.std(prevs)
+
+for rho in [0, 0.5, 0.98]:
+    print(rho, simular(rho, [1, 1]))
+print("x0=(1,-1)", simular(0.98, [1, -1]))
+\end{codigo}
+(a) O desvio-padrão de $\hat\beta_1$ cresce muito com $\rho$ (de cerca de 0,1
+para cerca de 0,5), enquanto o de $\hat y(1,1)$ fica em torno de 0,15 nos três
+casos. (b) Com $x_0=(1,-1)$ o desvio-padrão da previsão salta para cerca de 1,0,
+pior até que o dos coeficientes: o ponto está
+numa direção em que os dados quase não têm variação (com $\rho=0{,}98$, quase
+nunca se observa $x_1$ alto e $x_2$ baixo). Prever bem exige que o caso novo
+se pareça com os casos de treino. Previsões são confiáveis \emph{dentro} da
+região coberta pelos dados.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Guarda-chuva ou dança da chuva?]{3}
+Leia \textcite{kleinberg2015}. Dê um exemplo de política pública brasileira que
+seja um \emph{problema de política preditiva} e outro, sobre o mesmo tema, que
+exija inferência causal. Para o primeiro, descreva o que poderia dar errado se o
+modelo preditivo fosse usado para responder à pergunta do segundo.
+\end{exercicio}
+\begin{solucao}
+Resposta aberta. Exemplo no tema de evasão escolar. \emph{Preditivo:} com
+vagas limitadas de tutoria, quais alunos têm maior risco de abandono? Basta
+ordenar bem os alunos por risco. \emph{Causal:} a tutoria reduz o abandono?
+Exige comparar alunos semelhantes com e sem tutoria, idealmente com sorteio.
+Se usássemos os pesos do modelo preditivo (por exemplo, ``alunos que recebem
+bolsa abandonam menos'') como efeitos causais, poderíamos concluir que expandir
+a bolsa reduziria o abandono, quando a associação pode refletir seleção: quem
+recebe a bolsa já difere de quem não recebe em características não observadas.
+\end{solucao}
+
+\end{document}

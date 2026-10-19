@@ -1,0 +1,15 @@
+%% Transformações do JAX: recebem uma função e devolvem outra função
+flowchart LR
+  f["<b>f</b><br/>função Python<br/>escrita com jnp"]
+  g["<b>∇f</b><br/>gradiente exato"]
+  c["<b>f compilada</b><br/>XLA: CPU, GPU, TPU"]
+  v["<b>f em lote</b><br/>f(x₁), …, f(xₙ)"]
+  gc["<b>∇f compilada</b><br/>o que usaremos<br/>para treinar modelos"]
+  f -- "jax.grad" --> g
+  f -- "jax.jit" --> c
+  f -- "jax.vmap" --> v
+  g -- "jax.jit" --> gc
+  classDef base fill:#F2F2F2,stroke:#23373B,color:#23373B
+  classDef destaque fill:#FDE9D5,stroke:#EB811B,color:#23373B,stroke-width:2px
+  class f,g,c,v base
+  class gc destaque

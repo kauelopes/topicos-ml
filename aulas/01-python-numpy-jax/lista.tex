@@ -1,0 +1,161 @@
+% Lista de exercícios — gera lista.pdf e, com -jobname=lista-solucao,
+% lista-solucao.pdf (ver tex/exercicios.sty).
+\documentclass[lista]{tmlnotas}
+\usepackage{exercicios}
+
+\begin{document}
+\aula{1}{Introdução a Python, NumPy e JAX}[Python, NumPy e JAX]
+
+\noindent Resolva os exercícios em um notebook no Colab. Níveis:
+\nivel{1}~básico, \nivel{2}~intermediário, \nivel{3}~desafio.
+\ifsolucao\textbf{Esta versão contém as soluções.}\fi
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Juros compostos]{1}
+Escreva uma função \py{valor_futuro(vp, taxa_aa, anos)} que devolva o valor
+futuro de uma aplicação de valor presente \py{vp} remunerada à taxa anual
+\py{taxa_aa} (em \%) por \py{anos} anos. Em seguida, escreva
+\py{taxa_equivalente(taxa_aa, periodos)} que converta uma taxa anual na taxa
+equivalente por período (por exemplo, \py{periodos=12} para a taxa mensal).
+Verifique que capitalizar a taxa mensal equivalente por 12 meses devolve a
+taxa anual.
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+def valor_futuro(vp, taxa_aa, anos):
+    return vp * (1 + taxa_aa / 100) ** anos
+
+def taxa_equivalente(taxa_aa, periodos):
+    return 100 * ((1 + taxa_aa / 100) ** (1 / periodos) - 1)
+
+m = taxa_equivalente(15.0, 12)
+math.isclose(100 * ((1 + m / 100) ** 12 - 1), 15.0)   # True
+\end{codigo}
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Regime de metas]{1}
+Dada uma lista com a inflação acumulada em 12 meses de vários meses, escreva
+um programa que conte quantos meses ficaram acima do teto, abaixo do piso e
+dentro do intervalo de tolerância (centro de 3\%, tolerância de 1,5 p.p.).
+Use um dicionário para guardar as contagens.
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+def contar(inflacoes, centro=3.0, tol=1.5):
+    contagem = {"acima": 0, "abaixo": 0, "dentro": 0}
+    for pi in inflacoes:
+        if pi > centro + tol:
+            contagem["acima"] += 1
+        elif pi < centro - tol:
+            contagem["abaixo"] += 1
+        else:
+            contagem["dentro"] += 1
+    return contagem
+\end{codigo}
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Do laço ao vetor]{2}
+Seja \py{pi} um array NumPy com a variação mensal do IPCA (em \%).
+\begin{enumerate}[label=(\alph*)]
+  \item Calcule a inflação acumulada de todo o período com um laço e com
+        \py{np.prod}; confira que os resultados coincidem.
+  \item Usando \py{np.cumprod}, obtenha o número-índice de preços (base 100
+        no primeiro mês) para cada mês.
+  \item A partir do número-índice, calcule a inflação acumulada em 12 meses
+        para cada mês a partir do 12º, \emph{sem laços}.
+        \emph{Dica}: divida o índice pelo próprio índice defasado em 12 posições.
+\end{enumerate}
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+fator = 1 + pi / 100
+acum_total = 100 * (np.prod(fator) - 1)
+
+indice = 100 * np.cumprod(fator)
+# índice com base no mês anterior ao primeiro: I_0 = 100
+indice = np.concatenate([[100.0], indice])
+acum_12m = 100 * (indice[12:] / indice[:-12] - 1)
+\end{codigo}
+O item (c) explora o fato de que $\prod_{s=t-11}^{t}(1+\pi_s) = I_t / I_{t-12}$.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[MQO matricial]{2}
+Simule $n = 1000$ observações de $y_i = 0{,}5 + 1{,}2\,x_{1i} - 0{,}8\,x_{2i} +
+\varepsilon_i$, com $x_{1}, x_{2}, \varepsilon \iid \mathcal{N}(0,1)$.
+\begin{enumerate}[label=(\alph*)]
+  \item Monte a matriz $\mX$ (com intercepto) e estime $\hvbeta$ com
+        \py{np.linalg.solve}.
+  \item Compare com \py{np.linalg.lstsq(X, y)}.
+  \item Calcule os resíduos e verifique numericamente que $\mX\T\hat{\ve}
+        \approx \vect{0}$. Interprete.
+\end{enumerate}
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+rng = np.random.default_rng(0)
+n = 1000
+x1, x2, eps = rng.normal(size=(3, n))
+y = 0.5 + 1.2 * x1 - 0.8 * x2 + eps
+X = np.column_stack([np.ones(n), x1, x2])
+
+b_solve = np.linalg.solve(X.T @ X, X.T @ y)
+b_lstsq, *_ = np.linalg.lstsq(X, y, rcond=None)
+res = y - X @ b_solve
+X.T @ res        # ~ 1e-13: resíduos ortogonais às colunas de X
+\end{codigo}
+A ortogonalidade é exatamente a condição de primeira ordem do MQO, isto é,
+as equações normais.
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Produtividades marginais com JAX]{2}
+Para a função Cobb--Douglas $Y = A K^{\alpha} L^{1-\alpha}$, com $A = 1$ e
+$\alpha = 0{,}3$, use \py{jax.grad} (com o argumento \py{argnums}) para obter
+$\partial Y/\partial K$ e $\partial Y/\partial L$ no ponto $K = 10$, $L = 5$.
+Confira com as expressões analíticas $\alpha Y/K$ e $(1-\alpha)Y/L$ e verifique
+o teorema de Euler: $K\,\partial Y/\partial K + L\,\partial Y/\partial L = Y$.
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+import jax
+alpha = 0.3
+Y = lambda K, L: K**alpha * L**(1 - alpha)
+PMgK, PMgL = jax.grad(Y, argnums=(0, 1))(10.0, 5.0)
+y = Y(10.0, 5.0)
+PMgK - alpha * y / 10, PMgL - (1 - alpha) * y / 5   # ~ 0
+10 * PMgK + 5 * PMgL - y                            # ~ 0 (Euler)
+\end{codigo}
+\end{solucao}
+
+% ---------------------------------------------------------------------
+\begin{exercicio}[Gradiente da perda e \texttt{jit}]{3}
+Usando os dados do Exercício 4, defina $\loss(\vbeta) = \frac1n\norm{\vy-\mX\vbeta}^2$.
+\begin{enumerate}[label=(\alph*)]
+  \item Obtenha $\grad_{\vbeta}\loss$ com \py{jax.grad} e compare com a fórmula
+        $-\tfrac{2}{n}\mX\T(\vy-\mX\vbeta)$ em três valores de $\vbeta$ à sua escolha.
+  \item Avalie o gradiente em $\hvbeta_{\text{MQO}}$. O que você esperava encontrar? Por quê?
+  \item Compare o tempo de \py{jax.grad(perda)} e de \py{jax.jit(jax.grad(perda))}
+        com \py{%timeit} (lembre-se de \py{.block_until_ready()}). Por que a
+        primeira chamada da versão compilada é mais lenta?
+\end{enumerate}
+\end{exercicio}
+\begin{solucao}
+\begin{codigo}
+import jax.numpy as jnp
+perda = lambda b: jnp.mean((y - X @ b) ** 2)
+g = jax.grad(perda)
+for b in [jnp.zeros(3), jnp.ones(3), jnp.array([0.5, 1.2, -0.8])]:
+    print(g(b) - (-2 / n) * X.T @ (y - X @ b))     # ~ 0
+g(b_solve)        # ~ 0: o MQO é o ponto crítico da perda
+g_jit = jax.jit(g)
+\end{codigo}
+(b) O gradiente é (numericamente) zero no estimador de MQO, pois as equações
+normais são a condição de primeira ordem de $\min_{\vbeta}\loss$. (c) A primeira
+chamada inclui o rastreamento e a compilação via XLA; as seguintes reutilizam o
+código compilado.
+\end{solucao}
+
+\end{document}

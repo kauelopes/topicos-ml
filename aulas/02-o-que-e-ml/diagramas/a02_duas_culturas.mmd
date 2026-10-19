@@ -1,0 +1,14 @@
+%% Breiman (2001): duas culturas de modelagem estatística
+flowchart TB
+  subgraph A ["Cultura algorítmica (aprendizado de máquina)"]
+    x2["dados x, y"] --> m2["<b>f̂ flexível</b><br/>forma escolhida<br/>pelos dados"] --> y["<b>ŷ</b><br/>prever bem<br/>fora da amostra"]
+  end
+  subgraph E ["Modelagem de dados (econometria)"]
+    x1["dados x, y"] --> m1["<b>modelo especificado</b><br/>y = Xβ + ε"] --> b["<b>β̂</b><br/>interpretar, testar,<br/>efeito causal?"]
+  end
+  classDef beta fill:#E3EEF5,stroke:#2A6F97,color:#23373B,stroke-width:2px
+  classDef yhat fill:#FDE9D5,stroke:#EB811B,color:#23373B,stroke-width:2px
+  classDef base fill:#F2F2F2,stroke:#23373B,color:#23373B
+  class b beta
+  class y yhat
+  class x1,x2,m1,m2 base

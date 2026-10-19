@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tml"
+version = "0.1.0"
+description = "Utilitários do curso Computação Aplicada à Economia: Tópicos em Aprendizado de Máquina"
+authors = [{ name = "Kauê Lopes de Moraes" }]
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "matplotlib", "jax", "scikit-learn"]
+
+[project.optional-dependencies]
+dev = ["jupytext", "nbstripout"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"

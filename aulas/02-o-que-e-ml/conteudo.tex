@@ -1,0 +1,327 @@
+% =====================================================================
+%  Aula 2 — conteúdo das notas (incluído por notas.tex e pela apostila)
+% =====================================================================
+\aula{2}{O que é Aprendizado de Máquina?}[O que é ML?]
+
+\begin{intuicao}[title={Objetivos da aula}]
+Ao final desta aula você deve ser capaz de: (i) explicar o que significa um
+algoritmo ``aprender'' e por que o desempenho é medido em casos novos;
+(ii) distinguir problemas de previsão ($\hat y$) de problemas de inferência
+($\hat\beta$); (iii) classificar uma tarefa como regressão, classificação ou
+agrupamento; (iv) formular um problema econômico como tarefa de aprendizado de
+máquina; e (v) reconhecer o fluxo básico de um projeto em \pkg{scikit-learn}.
+\end{intuicao}
+
+\section{Três perguntas}
+
+Comecemos por três perguntas que um economista poderia receber numa mesma
+semana. Quanto deve valer um apartamento de 70\,m² em Pinheiros? Um cliente que
+pede um empréstimo vai pagá-lo? Que ``tipos'' de famílias existem nos dados de
+uma pesquisa de orçamentos domésticos?
+
+As três têm algo em comum: podem ser respondidas olhando para \emph{muitos casos
+parecidos} e extraindo deles um padrão. Ninguém escreve à mão a regra que liga
+área e localização ao preço; a regra é \emph{aprendida} a partir de transações
+passadas. Mas as três também diferem no que queremos obter: na primeira, um
+número; na segunda, uma categoria (paga ou não paga); na terceira, grupos que
+ninguém rotulou antes. Essas diferenças dão nome aos principais tipos de
+aprendizado de máquina, e reconhecê-las é o primeiro passo de qualquer projeto.
+
+\section{O que significa ``aprender''?}
+
+\begin{definicao}
+Um programa \emph{aprende} com a experiência $E$, em relação a uma classe de
+tarefas $T$ e a uma medida de desempenho $P$, se o seu desempenho nas tarefas
+em $T$, medido por $P$, melhora com a experiência $E$ \parencite{mitchell1997}.
+\end{definicao}
+
+A definição é deliberadamente operacional: não fala de ``inteligência'', fala de
+desempenho mensurável. No exemplo do crédito, a tarefa $T$ é prever se um novo
+cliente ficará inadimplente; a experiência $E$ é o histórico de clientes passados,
+com a informação de quem pagou; e o desempenho $P$ pode ser a proporção de
+clientes \emph{novos} classificados corretamente.
+
+A palavra \emph{novos} é o coração da definição. Um programa que simplesmente
+guardasse a lista de clientes passados acertaria 100\% deles, e não teria
+aprendido nada útil, porque o banco precisa decidir sobre quem ainda não está na
+lista. Aprender é \emph{generalizar}; decorar não é aprender. A Aula 3 inteira
+será dedicada a medir essa diferença com honestidade.
+
+\subsection{A mesma ideia em linguagem econométrica}
+
+Formalmente, supomos que o alvo $y$ e os atributos $\vx$ estão ligados por
+\begin{equation}\label{eq:a02-modelo}
+  y = f(\vx) + \varepsilon,
+\end{equation}
+em que $f$ é desconhecida e $\varepsilon$ reúne tudo o que $\vx$ não explica.
+Dispomos de um conjunto de dados $\data = \{(\vx_i, y_i)\}_{i=1}^{n}$.
+\emph{Aprender} é usar $\data$ para construir uma aproximação $\hf$;
+\emph{usar o modelo} é calcular $\hat y = \hf(\vx_{\text{novo}})$ para casos
+que não estavam em $\data$.
+
+\begin{conexao}
+Se impomos $f(\vx) = \vx\T\vbeta$ e escolhemos $\hvbeta$ minimizando a soma
+dos quadrados dos resíduos, \cref{eq:a02-modelo} é o modelo de regressão linear
+e o MQO é o algoritmo de aprendizado. Não há ruptura entre econometria e
+aprendizado de máquina: há uma mudança de \emph{ênfase}, como veremos a seguir.
+\end{conexao}
+
+\subsection{Um pequeno dicionário}
+
+As duas comunidades desenvolveram vocabulários próprios para as mesmas ideias.
+A \cref{tab:a02-dicionario} reúne as traduções mais comuns; vale guardá-la, porque
+a documentação das bibliotecas usa sempre o vocabulário da direita.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Termos equivalentes em econometria e aprendizado de máquina.}
+  \label{tab:a02-dicionario}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Econometria & Aprendizado de máquina & Símbolo \\
+    \midrule
+    variável dependente      & alvo, rótulo (\emph{target}, \emph{label}) & $y$ \\
+    variáveis explicativas   & atributos (\emph{features})                  & $\vx$ \\
+    observação               & exemplo, instância                           & $(\vx_i,y_i)$ \\
+    amostra                  & conjunto de treino                           & $\dtreino$ \\
+    estimar                  & treinar, ajustar (\emph{fit})                & $\data\mapsto\hf$ \\
+    parâmetros               & pesos (\emph{weights})                       & $\vbeta$, $\vw$ \\
+    intercepto               & viés (\emph{bias})                           & $\beta_0$, $b$ \\
+    valor ajustado           & previsão (\emph{prediction})                 & $\hat y$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{atencao}
+Em ML, ``viés'' (\emph{bias}) pode designar simplesmente o intercepto de um
+modelo, sem relação com o viés de um estimador ($\E[\hat\theta]-\theta$). O
+contexto decide. Na Aula 3 encontraremos o viés no segundo sentido, no
+compromisso entre viés e variância.
+\end{atencao}
+
+\section{Estatística, econometria e aprendizado de máquina}
+
+\subsection{Duas culturas}
+
+\textcite{breiman2001cultures} descreveu duas culturas na análise de dados
+(\cref{fig:a02-culturas}). Na \emph{cultura da modelagem de dados}, dominante
+na estatística e na econometria, o pesquisador especifica um modelo para o
+processo gerador dos dados (por exemplo, $y=\mX\vbeta+\ve$ com hipóteses sobre
+$\ve$) e o interesse recai sobre os parâmetros: seus valores, seus erros-padrão,
+sua interpretação. Na \emph{cultura algorítmica}, o processo gerador é tratado
+como uma caixa-preta; escolhe-se o algoritmo que melhor prevê casos novos, e a
+validação fora da amostra é o critério de qualidade.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.78\linewidth]{a02_duas_culturas}
+  \caption{As duas culturas de \textcite{breiman2001cultures}. O que muda não é a
+  matemática disponível, e sim o produto final que se deseja: $\hat\beta$ ou $\hat y$.}
+  \label{fig:a02-culturas}
+\end{figure}
+
+\subsection{Problemas de \texorpdfstring{$\hat\beta$}{beta} e problemas de \texorpdfstring{$\hat y$}{y}}
+
+\textcite{mullainathan2017} traduzem essa distinção para a economia aplicada.
+Muitos trabalhos empíricos são \emph{problemas de $\hat\beta$}: qual o efeito de
+um ano adicional de estudo sobre o salário? Um programa de transferência de renda
+afeta a frequência escolar? Aqui o objetivo é entender um mecanismo, e a
+dificuldade central é a \emph{identificação}: saber o que aconteceria se
+mudássemos $x$, mantido o resto constante. Outros são \emph{problemas de
+$\hat y$}: qual a probabilidade de um cliente ficar inadimplente? Qual será a
+inflação do próximo mês? Aqui importa acertar casos ainda não observados, e a
+dificuldade central é a \emph{generalização}.
+
+O aprendizado de máquina foi construído para problemas de $\hat y$. Usá-lo para
+responder perguntas de $\hat\beta$ sem cuidados adicionais é um erro comum, e
+a \cref{fig:a02-prever} mostra por quê.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\linewidth]{a02_prever_inferir}
+  \caption{Mil amostras de $n=100$ observações de $y = x_1 + x_2 + \varepsilon$,
+  com $\operatorname{corr}(x_1,x_2)=0{,}98$. Em cada amostra estimamos o modelo por
+  MQO. O coeficiente de $x_1$ varia muito entre amostras; a previsão no ponto
+  $x_0 = (1,1)$ varia bem menos.}
+  \label{fig:a02-prever}
+\end{figure}
+
+\begin{intuicao}
+Quando $x_1$ e $x_2$ andam juntos, os dados informam bem o efeito
+\emph{conjunto} $\beta_1+\beta_2$, que é o que a previsão em $x_0=(1,1)$ usa,
+mas informam mal como esse efeito se divide entre $\beta_1$ e $\beta_2$.
+Para prever, a divisão não importa; para interpretar, ela é tudo. Por isso um
+modelo com ótimo desempenho preditivo pode ter coeficientes que mudam de sinal
+de uma amostra para outra.
+\end{intuicao}
+
+\subsection{Guarda-chuva ou dança da chuva?}
+
+\textcite{kleinberg2015} propõem uma imagem simples. Quem decide se leva o
+guarda-chuva só precisa \emph{prever} se vai chover; o motivo da chuva é
+irrelevante. Quem decide se faz a dança da chuva precisa saber se a dança
+\emph{causa} chuva; nenhuma previsão responde a isso. Os autores mostram que
+muitas decisões de política pública são do primeiro tipo, ou seja,
+\emph{problemas de política preditiva}. Um exemplo do artigo: identificar
+pacientes idosos que provavelmente morreriam no ano seguinte, para os quais
+uma cirurgia de prótese de quadril traria pouco benefício. A decisão depende de
+uma previsão, não de um efeito causal.
+
+\begin{conexao}
+Previsão e causalidade não são rivais. Métodos modernos de inferência causal
+usam aprendizado de máquina em etapas puramente preditivas, por exemplo para
+controlar de forma flexível muitas variáveis de confusão
+\parencite{chernozhukov2018,athey2019}. Voltaremos a isso na Aula 6.
+\end{conexao}
+
+\section{Tipos de aprendizado}
+
+A pergunta que organiza a taxonomia é: \emph{observamos o alvo $y$?}
+(\cref{fig:a02-taxonomia}).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.82\linewidth]{a02_taxonomia}
+  \caption{Tipos de aprendizado de máquina. Neste curso tratamos dos ramos
+  supervisionados; o aprendizado por reforço fica fora do escopo.}
+  \label{fig:a02-taxonomia}
+\end{figure}
+
+\begin{description}
+  \item[Aprendizado supervisionado.] Observamos pares $(\vx_i, y_i)$: os dados
+  ``supervisionam'' o algoritmo com respostas corretas. Se $y$ é contínuo
+  (preço, salário, inflação), temos uma tarefa de \emph{regressão}; se $y$ é
+  categórico (inadimplente ou não, setor de atividade), uma tarefa de
+  \emph{classificação}.
+  \item[Aprendizado não supervisionado.] Observamos apenas $\vx_i$. O objetivo é
+  descobrir estrutura: grupos de observações parecidas (\emph{agrupamento}) ou
+  poucas combinações de variáveis que resumem muitas (\emph{redução de
+  dimensionalidade}, como num índice de condições financeiras construído a
+  partir de dezenas de séries).
+  \item[Aprendizado por reforço.] Um agente aprende a agir por tentativa e erro,
+  recebendo recompensas do ambiente. É uma área ativa em economia computacional,
+  mas exige ferramentas que estão além deste curso.
+\end{description}
+
+A \cref{fig:a02-tarefas} ilustra as três tarefas principais. Note a diferença
+no terceiro painel: não há cores ``verdadeiras''. O algoritmo propõe três grupos
+porque nós pedimos três; se pedíssemos cinco, ele proporia cinco. Interpretar e
+validar os grupos é responsabilidade do analista.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{a02_tarefas}
+  \caption{Regressão (prever um número), classificação (prever uma categoria,
+  com a fronteira de decisão tracejada) e agrupamento (propor grupos sem rótulos;
+  os X marcam os centros encontrados pelo algoritmo $k$-médias). Dados simulados.}
+  \label{fig:a02-tarefas}
+\end{figure}
+
+\subsection{Formular é escolher}
+
+A tarefa não está escrita nos dados; é uma escolha do analista. Com a mesma
+base de domicílios, podemos prever a renda em reais (regressão), prever se a
+renda supera dois salários mínimos (classificação) ou procurar perfis de
+domicílios sem alvo nenhum (agrupamento). Discretizar um alvo contínuo
+simplifica a comunicação, mas descarta informação. O critério para escolher
+é a \emph{decisão} que a previsão vai apoiar.
+
+\section{Formulando problemas econômicos}
+
+Antes de abrir o Python, vale preencher uma ficha com seis itens:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Decisão}: quem vai usar a previsão, e para quê?
+  \item \textbf{Unidade de observação}: o que é uma linha da base?
+  \item \textbf{Alvo $y$}: o que exatamente queremos prever, com definição precisa?
+  \item \textbf{Atributos $\vx$}: que informação está disponível \emph{no momento
+        em que a decisão é tomada}?
+  \item \textbf{Tarefa}: regressão, classificação ou agrupamento?
+  \item \textbf{Métrica}: como saberemos se o modelo é bom o suficiente para a decisão?
+\end{enumerate}
+
+\begin{exemplo}[title={Exemplo: crédito pessoal}]
+\textbf{Decisão:} aprovar ou recusar um pedido de empréstimo.
+\textbf{Unidade:} um pedido.
+\textbf{Alvo:} atraso superior a 90 dias nos 12 meses seguintes (sim/não).
+\textbf{Atributos:} renda declarada, idade, razão dívida/renda, histórico no
+cadastro positivo, todos conhecidos na data do pedido.
+\textbf{Tarefa:} classificação.
+\textbf{Métrica:} os dois erros têm custos diferentes. Recusar um bom pagador
+custa a margem do empréstimo; aprovar um mau pagador custa o principal. A
+métrica deve refletir essa assimetria (Aula 3).
+\end{exemplo}
+
+\begin{atencao}
+O item 4 é onde a maioria dos projetos tropeça. Se um atributo só é conhecido
+\emph{depois} do evento que queremos prever (``número de cartas de cobrança
+enviadas'' para prever inadimplência, ou a revisão final do PIB para prever o
+próprio PIB), o modelo parecerá excelente nos dados históricos e será inútil na
+prática. Esse fenômeno, o \emph{vazamento de dados}, é um dos temas da Aula 3.
+\end{atencao}
+
+\section{Fluxo de trabalho em Python}
+
+Um projeto de aprendizado supervisionado segue, em linhas gerais, o fluxo da
+\cref{fig:a02-fluxo}. As etapas em laranja (separar e avaliar) são o assunto da
+Aula 3; a etapa em azul (treinar) será aberta por dentro nas Aulas 4 e 5.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{a02_fluxo}
+  \caption{Fluxo de um projeto de aprendizado supervisionado. O ciclo
+  avaliar–ajustar pode se repetir várias vezes, mas sempre com dados de
+  validação; o conjunto de teste é usado uma única vez, no final.}
+  \label{fig:a02-fluxo}
+\end{figure}
+
+A biblioteca \pkg{scikit-learn} \parencite{pedregosa2011} padroniza esse fluxo:
+todo modelo é um objeto com os métodos \py{fit} (aprender) e \py{predict}
+(prever).
+
+\begin{codigo}
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.dummy import DummyRegressor
+from sklearn.metrics import mean_squared_error
+
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=0)
+
+for modelo in [DummyRegressor(strategy="mean"), LinearRegression()]:
+    modelo.fit(X_tr, y_tr)
+    rmse = mean_squared_error(y_te, modelo.predict(X_te)) ** 0.5
+    print(type(modelo).__name__, round(rmse, 3))
+\end{codigo}
+
+Dois detalhes merecem destaque. Primeiro, o desempenho é calculado em
+\py{X_te}, \py{y_te}, dados que o modelo não viu durante o \py{fit}.
+Segundo, o laço compara o modelo com uma \emph{referência ingênua}, que prevê
+sempre a média do treino.
+
+\begin{atencao}
+Um número de desempenho isolado não diz nada. Se 95\% dos clientes pagam em
+dia, um ``modelo'' que declara que \emph{todos} pagam acerta 95\% dos casos e
+não tem nenhuma utilidade. Compare sempre com uma referência ingênua: a média
+(regressão), a classe mais frequente (classificação) ou o último valor
+observado (séries temporais).
+\end{atencao}
+
+\section{Resumo e leituras}
+
+\begin{itemize}[nosep]
+  \item Aprender é melhorar o desempenho em \emph{casos novos} com a experiência.
+  \item A regressão linear já é um algoritmo de aprendizado; o que muda no ML é a
+        ênfase em $\hat y$ e na validação fora da amostra.
+  \item Bons $\hat y$ não garantem $\hat\beta$ interpretáveis.
+  \item Supervisionado (regressão, classificação) versus não supervisionado
+        (agrupamento, redução de dimensão).
+  \item Formular vem antes de modelar; os atributos precisam estar disponíveis no
+        momento da decisão.
+  \item \py{fit}, \py{predict} e uma referência ingênua, sempre.
+\end{itemize}
+
+\noindent\textbf{Leituras sugeridas.} \textcite{mullainathan2017} é a melhor
+porta de entrada para economistas. \textcite[cap.~2]{james2021} apresenta a
+formulação estatística com exemplos acessíveis. \textcite{breiman2001cultures}
+e os comentários publicados junto ao artigo continuam atuais. Para um panorama
+das aplicações em economia, \textcite{athey2019} e \textcite{varian2014}.

@@ -1,0 +1,48 @@
+% =====================================================================
+%  exercicios.sty — ambientes de exercício e solução.
+%
+%  Um único arquivo lista.tex gera duas versões:
+%    lista.pdf           (sem soluções)
+%    lista-solucao.pdf   (com soluções)   <- basta o jobname conter "solucao"
+%  O Makefile faz isso com: latexmk -jobname=lista-solucao lista.tex
+%  Também é possível forçar com \solucaotrue no preâmbulo.
+% =====================================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{exercicios}[2026/10/15 Exercicios e solucoes]
+
+\RequirePackage{comment}
+\RequirePackage{tcolorbox}
+\RequirePackage{needspace}
+
+\newif\ifsolucao
+\ExplSyntaxOn
+\str_set:Nx \l_tmpa_str { \jobname }
+\str_if_in:NnT \l_tmpa_str { solucao } { \solucaotrue }
+\ExplSyntaxOff
+
+% Nível: \nivel{1} básico, \nivel{2} intermediário, \nivel{3} desafio
+\newcommand{\nivel}[1]{%
+  \ifcase#1\or\textcolor{tmlgreen}{$\bullet$}%
+  \or\textcolor{tmlaccent}{$\bullet\bullet$}%
+  \or\textcolor{tmlred}{$\bullet\bullet\bullet$}\fi}
+
+\newcounter{exercicio}
+% \begin{exercicio}[Título opcional]{nível}
+\NewDocumentEnvironment{exercicio}{o m}{%
+  \refstepcounter{exercicio}%
+  \par\medskip\needspace{6\baselineskip}\noindent
+  {\sffamily\bfseries\color{tmlprimary}Exercício \theexercicio}%
+  \IfValueT{#1}{\ {\sffamily\color{tmlprimary}— #1}}%
+  \hfill\nivel{#2}\par\nopagebreak\smallskip
+}{\par}
+
+% Solução: some quando \ifsolucao é falso. O pacote comment lê linha a
+% linha, então minted/verbatim funcionam dentro da solução.
+\ifsolucao
+  \newtcolorbox{solucaobox}{tmlbase=tmlgreen, title={Solução}}
+  \newenvironment{solucao}{\begin{solucaobox}}{\end{solucaobox}}
+\else
+  \excludecomment{solucao}
+\fi
+
+\endinput

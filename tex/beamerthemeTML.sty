@@ -1,0 +1,69 @@
+% =====================================================================
+%  beamerthemeTML.sty — tema dos slides do curso.
+%  Por enquanto é um invólucro fino sobre o metropolis: trocar o visual
+%  depois significa mexer só neste arquivo.
+%  Uso:  \documentclass[aspectratio=169]{beamer}
+%        \usetheme{TML}
+% =====================================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemeTML}[2026/10/15 Tema Topicos em ML]
+
+\usetheme[
+  progressbar=frametitle,
+  numbering=fraction,
+  sectionpage=progressbar,
+  block=fill,
+]{metropolis}
+
+% Fontes (LuaLaTeX): Fira Sans no texto, Fira Math na matemática
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setsansfont{Fira Sans}[BoldFont={Fira Sans SemiBold}]
+\setmonofont{Fira Mono}[Scale=0.92]
+\setmathfont{Fira Math}
+\usefonttheme{professionalfonts}
+
+\usepackage{topicosml}
+
+% Cores do metropolis amarradas à paleta do curso
+\setbeamercolor{alerted text}{fg=tmlaccent}
+\setbeamercolor{example text}{fg=tmlgreen}
+
+% Código um pouco menor nos slides (colunas estreitas)
+\setminted{fontsize=\footnotesize}
+
+% Bibliografia compacta nos slides
+\setbeamertemplate{bibliography item}{}
+\renewcommand*{\bibfont}{\scriptsize}
+
+% ---------------------------------------------------------------------
+% \aula{número}{título} — define título/subtítulo da apresentação
+% ---------------------------------------------------------------------
+\newcounter{aula}
+\newcommand{\aulatitulo}{}
+\newcommand{\aula}[2]{%
+  \setcounter{aula}{#1}%
+  \renewcommand{\aulatitulo}{#2}%
+  \title{#2}%
+  \subtitle{Aula #1 \textbullet{} \tmlcursocurto}%
+  \author{\tmlautor}%
+  \date{\tmlsemestre}%
+}
+
+% ---------------------------------------------------------------------
+% Marcadores da dinâmica da aula (1h teoria / 30min demo / 30min lab)
+%   \parte{Motivação}  -> seção comum
+%   \demo{...}         -> slide de transição para o live coding
+%   \lab{...}          -> slide de transição para o laboratório
+% ---------------------------------------------------------------------
+\newcommand{\transicao}[3]{% #1 rótulo, #2 cor, #3 conteúdo
+  {\setbeamercolor{background canvas}{bg=tmlprimary}
+   \begin{frame}[plain,noframenumbering]
+     \centering\color{white}
+     {\sffamily\small\textcolor{#2}{\MakeUppercase{#1}}}\par\medskip
+     {\Large #3}
+   \end{frame}}}
+\newcommand{\demo}[2][]{\transicao{Demonstração \textbullet{} live coding}{tmlaccent}{#2\ifx&#1&\else\par\bigskip\normalsize\colab{#1}{notebook}\fi}}
+\newcommand{\lab}[2][]{\transicao{Laboratório assistido}{tmlgreen}{#2\ifx&#1&\else\par\bigskip\normalsize\colab{#1}{notebook}\fi}}
+
+\endinput

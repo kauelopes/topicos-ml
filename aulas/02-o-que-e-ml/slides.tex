@@ -1,0 +1,568 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{TML}
+
+\aula{2}{O que é Aprendizado de Máquina?}
+
+\newcommand{\nbdir}{aulas/02-o-que-e-ml/notebooks}
+
+\begin{document}
+
+\maketitle
+
+% =====================================================================
+\begin{frame}{Três perguntas}
+  \begin{enumerate}
+    \item Quanto deve valer este apartamento de 70\,m² em Pinheiros?
+    \item Este cliente vai pagar o empréstimo que está pedindo?
+    \item Que ``tipos'' de famílias existem nos dados de orçamento doméstico?
+  \end{enumerate}
+  \bigskip
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      \textbf{O que têm em comum?}\\
+      Todas podem ser respondidas \alert{aprendendo padrões a partir de dados}
+      de casos parecidos.
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \textbf{Em que diferem?}\\
+      No que queremos obter: um \alert{número}, uma \alert{categoria} ou
+      \alert{grupos} que ninguém rotulou antes.
+    \end{column}
+  \end{columns}
+  \bigskip
+  \centering\small\textcolor{gray}{Ao fim da aula você saberá dar nome a cada uma e formulá-las como tarefas de ML.}
+\end{frame}
+
+\begin{frame}{Roteiro da aula}
+  \setbeamertemplate{section in toc}[sections numbered]
+  \small\tableofcontents[hideallsubsections]
+\end{frame}
+
+% =====================================================================
+\section{O que significa ``aprender''?}
+
+\begin{frame}{Uma definição operacional}
+  \begin{definicao}
+    Um programa \alert{aprende} com a experiência $E$, em relação a uma tarefa
+    $T$ e a uma medida de desempenho $P$, se o seu desempenho em $T$, medido
+    por $P$, melhora com $E$. \hfill \parencite{mitchell1997}
+  \end{definicao}
+  \medskip
+  \begin{exemplo}[title={Exemplo: concessão de crédito}]
+    \begin{tabular}{@{}ll@{}}
+      $T$ (tarefa) & prever se um novo cliente ficará inadimplente \\
+      $E$ (experiência) & histórico de clientes passados e se pagaram ou não \\
+      $P$ (desempenho) & proporção de clientes \emph{novos} classificados corretamente
+    \end{tabular}
+  \end{exemplo}
+  \medskip
+  Repare: $P$ é medido em casos \alert{novos}. É isso que separa aprender de decorar.
+\end{frame}
+
+\begin{frame}{A mesma ideia em linguagem que você já conhece}
+  Supomos que existe uma relação entre atributos $\vx$ e um alvo $y$:
+  \[ y = f(\vx) + \varepsilon \]
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item $f$ é \alert{desconhecida}
+        \item Temos dados $\data = \{(\vx_i, y_i)\}_{i=1}^{n}$
+        \item \alert{Aprender} = usar $\data$ para construir $\hf$
+        \item \alert{Usar} = prever $\hat y = \hf(\vx_{\text{novo}})$
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{conexao}
+        \small Se $f(\vx) = \vx\T\vbeta$ e escolhemos $\hvbeta$ por mínimos
+        quadrados, isso \emph{é} a regressão linear. O MQO já é um algoritmo
+        de aprendizado!
+      \end{conexao}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Dicionário econometria $\leftrightarrow$ aprendizado de máquina}
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Econometria & Aprendizado de máquina & Símbolo \\
+    \midrule
+    variável dependente     & alvo, rótulo (\emph{target}, \emph{label})   & $y$ \\
+    variáveis explicativas  & atributos (\emph{features})                    & $\vx$ \\
+    observação              & exemplo, instância                             & $(\vx_i, y_i)$ \\
+    amostra                 & conjunto de treino                             & $\dtreino$ \\
+    estimar                 & treinar, ajustar (\emph{fit})                  & $\data \mapsto \hf$ \\
+    parâmetros, coeficientes& pesos (\emph{weights})                         & $\vbeta$, $\vw$ \\
+    intercepto              & viés (\emph{bias})                             & $\beta_0$, $b$ \\
+    valor ajustado          & previsão (\emph{prediction})                   & $\hat y$ \\
+    \bottomrule
+  \end{tabular}
+  \medskip
+
+  \small\textcolor{gray}{Cuidado: ``viés'' em ML às vezes é só o intercepto, não o viés de um estimador.}
+\end{frame}
+
+% =====================================================================
+\section{Mudando de domínio}
+
+\begin{frame}{O percurso de sempre: começamos pelo DGP}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Pergunta:} quanto um ano a mais de estudo aumenta o salário?
+      \medskip
+
+      \textbf{Dados:} PNAD Contínua, uma linha por trabalhador.
+      \medskip
+
+      \textbf{Teoria:} o capital humano sugere o processo gerador dos dados
+      (\emph{DGP}) \parencite{mincer1974}:
+      \small
+      \[ \ln w_i = \beta_0 + \beta_1\,\text{educ}_i + \beta_2\,\text{exper}_i
+                   + \beta_3\,\text{exper}_i^2 + \varepsilon_i \]
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering\small
+      \begin{tabular}{@{}cccc@{}}
+        \toprule
+        educ & exper & exper$^2$ & $\ln w$ \\
+        (anos) & (anos) & & \\
+        \midrule
+        11 & 20 &  400 & 7,60 \\
+        16 &  8 &   64 & 8,16 \\
+         9 & 30 &  900 & 7,31 \\
+        18 & 15 &  225 & 8,99 \\
+        \bottomrule
+      \end{tabular}
+      \par\smallskip
+      {\footnotesize\textcolor{gray}{valores ilustrativos}}
+      \medskip
+      \begin{intuicao}
+        \small Cada coluna de $\mX$ tem \alert{nome, unidade e significado}.
+      \end{intuicao}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Cada termo conta uma história}
+  \[ \ln w_i = \beta_0 + \beta_1\,\text{educ}_i + \beta_2\,\text{exper}_i
+               + \beta_3\,\text{exper}_i^2 + \varepsilon_i \]
+  \begin{itemize}
+    \item<2-> $\beta_1$: um ano a mais de estudo muda o salário em cerca de
+          $100\,\beta_1$\%: o \alert{retorno da educação}
+    \item<3-> $\beta_2 > 0$ e $\beta_3 < 0$: o salário cresce com a
+          experiência, mas cada vez menos (\alert{concavidade})
+    \item<4-> $\varepsilon_i$: o que não observamos (habilidade, rede de
+          contatos\ldots). Se a habilidade se correlaciona com educ, $\hat\beta_1$
+          tem \alert{viés de variável omitida}
+  \end{itemize}
+  \begin{onlyenv}<5>
+  \begin{conexao}[title={O percurso que vocês conhecem}]
+    \small teoria $\to$ DGP $\to$ estimar $\hvbeta$ $\to$ testar hipóteses
+    $\to$ \alert{interpretar} cada coeficiente
+  \end{conexao}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}{Por que esse percurso funciona?}
+  Ele se apoia em três condições que quase nunca questionamos:
+  \medskip
+  \begin{enumerate}
+    \item \textbf{Poucas colunas}: $p = 4$ variáveis, e o número de
+          observações $n$ é muito maior que $p$.
+    \item \textbf{Cada coluna significa algo sozinha}: ``educ'' é educação
+          para todo mundo, e a ordem das colunas não importa.
+    \item \textbf{A teoria sugere a forma de $f$}: linear em educ, quadrática
+          em exper.
+  \end{enumerate}
+  \medskip
+  \begin{atencao}
+    \small Guarde essas três condições. Nos próximos slides vamos quebrá-las,
+    uma a uma.
+  \end{atencao}
+\end{frame}
+
+\begin{frame}{E se mudarmos de domínio?}
+  \begin{columns}[c]
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\linewidth]{a02_gato_cachorro}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \Large
+      $\vx$ = os \alert{pixels} de uma imagem\\[6pt]
+      $y \in \{\text{gato}, \text{cachorro}\}$
+      \normalsize
+      \bigskip
+
+      \begin{uncoverenv}<2>
+      \textbf{Pergunta para a turma:} escrevam o DGP.
+      \[ y_i = \;?\]
+      \end{uncoverenv}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{O que o computador vê}
+  \centering
+  \includegraphics[width=0.54\linewidth]{a02_pixels}
+  \par\smallskip\raggedright\small
+  Cada pixel é um número de 0 (preto) a 255 (branco). A imagem $24\times24$
+  vira \alert{uma linha} de $\mX$ com 576 colunas. Uma foto de
+  $224\times224$ em cores (3 canais) tem $224 \times 224 \times 3 = 150\,528$.
+  \begin{atencao}
+    \small \textbf{Condição 1 quebrada.} De 4 colunas passamos a centenas de
+    milhares, e $p$ pode ser maior que $n$.
+  \end{atencao}
+\end{frame}
+
+\begin{frame}{Vizinhança: o significado está no arranjo}
+  \centering
+  \includegraphics[width=0.6\linewidth]{a02_deslocamento}
+  \par\smallskip\raggedright\small
+  O pixel $(12, 7)$, coluna 295 de $\mX$ (contando do zero), é \alert{olho}
+  numa imagem e \alert{pelo} na outra. Mudaram 128 colunas e $y$ continua
+  ``gato'': o que importa é o padrão que cada pixel forma com os
+  \alert{vizinhos}.
+  \begin{atencao}
+    \small \textbf{Condição 2 quebrada.} Na PNAD, a coluna educ é sempre
+    educação. Aqui, nenhuma coluna tem significado próprio.
+  \end{atencao}
+\end{frame}
+
+\begin{frame}{Vamos tentar com o que sabemos}
+  \begin{enumerate}
+    \item<1-> \textbf{Logit nos pixels:}
+          $P(\text{gato}\mid\vx) = \Lambda\big(\beta_0 + \sum_{j=1}^{150\,528}\beta_j x_j\big)$\\
+          \small O que é $\beta_{295}$? ``O efeito do brilho do pixel 295 sobre a
+          chance de ser gato''. E se o gato estiver 2 pixels para o lado?
+          \normalsize
+    \item<2-> \textbf{Deixar mais flexível com interações:} só os pares de pixels
+          já dão $150\,528 \times 150\,527 / 2 \approx 11{,}3$ \alert{bilhões} de
+          coeficientes.
+    \item<3-> \textbf{Criar atributos à mão:} ``tem orelha pontuda?'',
+          ``tem focinho?''\\
+          \small Como escrever ``orelha'' em termos de pixels, em qualquer
+          posição, tamanho, iluminação, pose e raça?\normalsize
+  \end{enumerate}
+  \begin{onlyenv}<4>
+  \begin{atencao}
+    \small \textbf{Condição 3 quebrada.} Não há teoria que nos dê a forma de
+    $f$. Se bateu um certo desespero, é isso mesmo: o percurso do DGP
+    \alert{não tem por onde começar}.
+  \end{atencao}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}{Dois mundos de $\mX$}
+  \centering\small
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.27\textwidth}
+                    >{\raggedright\arraybackslash}p{0.3\textwidth}
+                    >{\raggedright\arraybackslash}p{0.33\textwidth}@{}}
+    \toprule
+    & Salário (PNAD) & Imagem (gato ou cachorro) \\
+    \midrule
+    nº de colunas $p$              & 4                       & de centenas a centenas de milhares \\
+    significado de uma coluna      & próprio (anos de estudo) & nenhum, isoladamente \\
+    ordem das colunas              & irrelevante             & essencial (vizinhança) \\
+    mesmo $y$, $\vx$ muito diferente & raro                  & sempre: posição, luz, escala, pose \\
+    colunas vizinhas               & algumas correlacionadas & quase iguais (colinearidade extrema) \\
+    de onde vem $f$                & da teoria               & não há teoria \\
+    pergunta                       & $\hat\beta$: quanto vale estudar? & $\hat y$: é um gato? \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+\begin{frame}{É para isso que usamos aprendizado de máquina}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Invertemos o percurso:}
+      \begin{itemize}\small
+        \item não escrevemos $f$; damos ao algoritmo \alert{muitos exemplos}
+              $(\vx_i, y_i)$ rotulados
+        \item ele escolhe $\hf$ dentro de uma família \alert{muito flexível}
+              de funções
+        \item julgamos $\hf$ pelos acertos em \alert{imagens novas}, como na
+              definição de Mitchell
+      \end{itemize}
+      \medskip
+      \small Perdemos coeficientes interpretáveis; ganhamos previsões onde
+      não há teoria para $f$.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exemplo}[title={E economistas com isso?}]
+        \small Pixels de imagens de satélite servem para prever a pobreza de
+        regiões com poucos dados de pesquisas domiciliares \parencite{jean2016}. Texto e
+        imagens como dado: Aula~6.
+      \end{exemplo}
+      \begin{atencao}
+        \small O ML não aposenta a econometria. Se a pergunta é o retorno da
+        educação, o percurso do DGP continua sendo o caminho.
+      \end{atencao}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% =====================================================================
+\section{Estatística, econometria e ML}
+
+\begin{frame}{Duas culturas}
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \includegraphics[width=\linewidth]{a02_duas_culturas}
+    \end{column}
+    \begin{column}{0.37\textwidth}
+      \textcite{breiman2001cultures}:
+      \begin{itemize}\small
+        \item a estatística tradicional parte de um \alert{modelo para os dados}
+              e se interessa pelos parâmetros (o salário);
+        \item o ML parte de um \alert{algoritmo que prevê bem} e o julga pelo
+              desempenho fora da amostra (o gato).
+      \end{itemize}
+      \small A matemática é a mesma; muda o \textbf{produto final}.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Problemas de $\hat\beta$ e problemas de $\hat y$}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{\textcolor{tmlblue}{Problemas de $\hat\beta$}}\\[2pt]
+      Queremos entender um \alert{mecanismo}.
+      \begin{itemize}\small
+        \item Qual o efeito de um ano a mais de estudo sobre o salário?
+        \item O Bolsa Família afeta a frequência escolar?
+      \end{itemize}
+      \small Exige identificação: o que aconteceria \emph{se} mudássemos $x$?
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{\textcolor{tmlaccent}{Problemas de $\hat y$}}\\[2pt]
+      Queremos uma boa \alert{previsão}.
+      \begin{itemize}\small
+        \item Qual a probabilidade de este cliente ficar inadimplente?
+        \item Qual será o IPCA do próximo mês?
+      \end{itemize}
+      \small Exige generalização: acertar em casos que ainda não vimos.
+    \end{column}
+  \end{columns}
+  \bigskip
+  \centering
+  O aprendizado de máquina é feito para problemas de $\hat y$
+  \parencite{mullainathan2017}.
+\end{frame}
+
+\begin{frame}{Muitos $\hat\beta$ diferentes, quase o mesmo $\hat y$}
+  \centering
+  \includegraphics[width=0.8\linewidth]{a02_prever_inferir}
+  \par\raggedright\small
+  1000 amostras de $y = x_1 + x_2 + \varepsilon$, com $\operatorname{corr}(x_1,x_2)=0{,}98$.
+  O coeficiente de $x_1$ \alert{oscila muito}; a previsão em $x_0=(1,1)$ \alert{quase não muda}.
+  \begin{atencao}
+    \small Um modelo que prevê bem \textbf{não} garante coeficientes
+    interpretáveis. Não leia os ``pesos'' de um modelo preditivo como efeitos causais.
+  \end{atencao}
+\end{frame}
+
+\begin{frame}{Guarda-chuva ou dança da chuva?}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Levar o guarda-chuva?}\\
+      Basta \alert{prever} se vai chover. Não importa \emph{por que} chove.
+      \medskip
+
+      \small Política: quais pacientes idosos provavelmente morrerão no ano
+      seguinte, e para quem uma prótese de quadril traria pouco benefício?
+      \emph{Previsão} orienta a decisão.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Fazer a dança da chuva?}\\
+      Precisamos saber se a dança \alert{causa} chuva. Prever não basta.
+      \medskip
+
+      \small Política: um programa de reforço escolar \emph{reduz} a evasão?
+      Exige \emph{inferência causal}.
+    \end{column}
+  \end{columns}
+  \bigskip
+  \begin{conexao}
+    \small Muitas decisões públicas são \emph{problemas de previsão}
+    \parencite{kleinberg2015}. E mesmo estudos causais usam ML em etapas
+    preditivas \parencite{chernozhukov2018,athey2019}, assunto da Aula 6.
+  \end{conexao}
+\end{frame}
+
+% =====================================================================
+\section{Tipos de aprendizado}
+
+\begin{frame}{A pergunta-chave: temos o alvo $y$?}
+  \centering
+  \includegraphics[height=0.78\textheight]{a02_taxonomia}
+\end{frame}
+
+\begin{frame}{As três tarefas em uma imagem}
+  \centering
+  \includegraphics[width=\linewidth]{a02_tarefas}
+  \par\raggedright\small
+  Regressão e classificação \alert{aprendem com respostas conhecidas}.
+  O agrupamento \alert{propõe uma estrutura}, e cabe a nós interpretá-la
+  (e desconfiar dela).
+\end{frame}
+
+\begin{frame}{Formular é escolher}
+  A mesma base de dados pode gerar tarefas diferentes:
+  \medskip
+  \begin{center}
+  \begin{tabular}{@{}llp{0.38\textwidth}@{}}
+    \toprule
+    Alvo escolhido & Tarefa & O que se ganha ou perde \\
+    \midrule
+    renda em R\$ & regressão & usa toda a informação \\
+    renda $>$ 2 salários mínimos? & classificação & mais simples de comunicar; descarta informação \\
+    (nenhum alvo) & agrupamento & descobre perfis, sem garantia de que façam sentido \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \begin{intuicao}
+    \small A formulação vem \textbf{antes} do algoritmo e depende da \alert{decisão}
+    que a previsão vai apoiar. Errar aqui não se corrige depois com um modelo melhor.
+  \end{intuicao}
+\end{frame}
+
+% =====================================================================
+\section{Formulando problemas econômicos}
+
+\begin{frame}{Ficha de formulação}
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \begin{enumerate}\small
+        \item \textbf{Decisão}: quem usa a previsão e para quê?
+        \item \textbf{Unidade}: o que é uma linha?
+        \item \textbf{Alvo $y$}: o que prever?
+        \item \textbf{Atributos $\vx$}: o que se sabe \alert{no momento da decisão}?
+        \item \textbf{Tarefa}: regressão, classificação, agrupamento?
+        \item \textbf{Métrica}: como saber se ficou bom?
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \begin{exemplo}[title={Exemplo: crédito pessoal}]
+        \small
+        \textbf{Decisão:} aprovar ou não o pedido\\
+        \textbf{Unidade:} um pedido de empréstimo\\
+        \textbf{Alvo:} atraso $>$ 90 dias em 12 meses (sim/não)\\
+        \textbf{Atributos:} renda, idade, dívida/renda, histórico\\
+        \textbf{Tarefa:} classificação\\
+        \textbf{Métrica:} erros custam diferente: negar um bom pagador
+        $\neq$ aprovar um mau pagador (Aula 3)
+      \end{exemplo}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{A armadilha do item 4}
+  \begin{atencao}
+    Usar um atributo que \textbf{só existe depois} do que queremos prever.
+  \end{atencao}
+  \medskip
+  \begin{itemize}
+    \item Prever inadimplência usando ``número de cobranças enviadas''
+    \item Prever o PIB do trimestre usando a \emph{revisão final} do próprio PIB
+    \item Prever evasão escolar usando ``data de cancelamento da matrícula''
+  \end{itemize}
+  \medskip
+  O modelo parece excelente nos dados históricos e é \alert{inútil na prática}.
+  Esse é o \emph{vazamento de dados}, tema central da Aula 3.
+\end{frame}
+
+% =====================================================================
+\section{Fluxo de trabalho em Python}
+
+\begin{frame}{O fluxo de um projeto}
+  \centering
+  \includegraphics[height=0.52\textheight]{a02_fluxo}
+  \par\medskip\raggedright
+  \begin{itemize}\small
+    \item \textcolor{tmlaccent}{\textbf{Laranja}}: separar e avaliar sem se enganar (Aula 3)
+    \item \textcolor{tmlblue}{\textbf{Azul}}: como os modelos são treinados por dentro (Aulas 4 e 5)
+    \item O ciclo \emph{avaliar $\to$ ajustar} se repete, mas o conjunto de teste
+          só é usado \alert{uma vez}, no final
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{scikit-learn: uma interface para todos os modelos}
+  \begin{codigo}
+    from sklearn.model_selection import train_test_split
+    from sklearn.linear_model import LinearRegression
+    from sklearn.metrics import mean_squared_error
+
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=0)
+
+    modelo = LinearRegression()      # 1. escolher o modelo
+    modelo.fit(X_tr, y_tr)           # 2. aprender com o treino
+    y_hat = modelo.predict(X_te)     # 3. prever casos não vistos
+    mean_squared_error(y_te, y_hat) ** 0.5   # 4. avaliar fora da amostra
+  \end{codigo}
+  \begin{intuicao}
+    \small Todo modelo do \pkg{scikit-learn} \parencite{pedregosa2011} tem
+    \py{fit} e \py{predict}. Trocar a regressão linear por uma floresta aleatória
+    é trocar \textbf{uma linha}.
+  \end{intuicao}
+\end{frame}
+
+\begin{frame}[fragile]{Sempre compare com uma referência ingênua}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{codigo}
+        from sklearn.dummy import DummyRegressor
+
+        ingenuo = DummyRegressor(strategy="mean")
+        ingenuo.fit(X_tr, y_tr)
+        # prevê sempre a média do treino
+      \end{codigo}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{itemize}\small
+        \item Regressão: prever sempre a \alert{média}
+        \item Classificação: prever sempre a \alert{classe mais comum}
+        \item Séries temporais: prever o \alert{último valor}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \medskip
+  \begin{atencao}
+    \small Se 95\% dos clientes pagam, um ``modelo'' que diz \emph{todos pagam}
+    acerta 95\%. Um número de desempenho só tem significado \textbf{comparado} a
+    uma referência.
+  \end{atencao}
+\end{frame}
+
+% =====================================================================
+\section{Mãos à obra}
+
+\demo[\nbdir/02_demo.ipynb]{Do problema ao primeiro modelo:\\ preços de imóveis com scikit-learn}
+
+\lab[\nbdir/02_lab.ipynb]{Crédito e perfis de consumo:\\ classificação e agrupamento}
+
+\begin{frame}{Para fixar}
+  \begin{itemize}\small
+    \item Aprender = melhorar o desempenho em \alert{casos novos} com a experiência
+    \item Sem colunas com significado próprio e sem teoria para $f$ (imagens,
+          texto), o percurso do DGP trava: é aí que o ML entra
+    \item $\hat y$ e $\hat\beta$ respondem a perguntas diferentes; bons $\hat y$ não
+          garantem $\hat\beta$ interpretáveis
+    \item Supervisionado (regressão, classificação) $\times$ não supervisionado
+          (agrupamento, redução de dimensão)
+    \item Formular vem antes de modelar: decisão, unidade, alvo, atributos
+          \alert{disponíveis}, tarefa, métrica
+    \item \py{fit} / \py{predict} e uma referência ingênua, sempre
+  \end{itemize}
+  \medskip
+  \small\textbf{Para aprofundar:} \textcite{mullainathan2017}; \textcite[cap.~2]{james2021};
+  \textcite{breiman2001cultures}.
+  \smallskip
+
+  \textbf{Próxima aula:} como saber se o modelo aprendeu ou apenas decorou?
+\end{frame}
+
+\begin{frame}{Referências}
+  \printbibliography[heading=none]
+\end{frame}
+
+\end{document}

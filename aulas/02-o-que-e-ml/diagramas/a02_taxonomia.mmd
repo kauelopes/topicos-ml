@@ -1,0 +1,25 @@
+%% Tipos de aprendizado: a pergunta-chave é "temos a variável-alvo y?"
+flowchart TD
+  ML["<b>Aprendizado de máquina</b>"]
+  S["<b>Supervisionado</b><br/>observamos x <u>e</u> y"]
+  N["<b>Não supervisionado</b><br/>observamos só x"]
+  R["<b>Por reforço</b><br/>agente aprende agindo<br/><i>(fora do escopo)</i>"]
+  RG["<b>Regressão</b><br/>y contínuo<br/><i>preço de um imóvel</i>"]
+  CL["<b>Classificação</b><br/>y categórico<br/><i>inadimplência</i>"]
+  AG["<b>Agrupamento</b><br/>encontrar grupos<br/><i>perfis de consumo</i>"]
+  RD["<b>Redução de dimensão</b><br/>resumir muitas variáveis<br/><i>índice de atividade</i>"]
+  ML --> S
+  ML --> N
+  ML -.-> R
+  S --> RG
+  S --> CL
+  N --> AG
+  N --> RD
+  classDef raiz fill:#23373B,stroke:#23373B,color:#FFFFFF
+  classDef sup fill:#E3EEF5,stroke:#2A6F97,color:#23373B
+  classDef nsup fill:#FDE9D5,stroke:#EB811B,color:#23373B
+  classDef fora fill:#FFFFFF,stroke:#BBBBBB,color:#8C8C8C,stroke-dasharray:4 3
+  class ML raiz
+  class S,RG,CL sup
+  class N,AG,RD nsup
+  class R fora

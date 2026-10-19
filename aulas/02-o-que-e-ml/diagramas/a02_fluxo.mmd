@@ -1,0 +1,20 @@
+%% Fluxo de trabalho de um projeto de ML (e onde cada etapa aparece no curso)
+flowchart TB
+  subgraph L1 [" "]
+    direction LR
+    P["<b>1. Pergunta</b><br/>o que prever?<br/>para qual decisão?"] --> D["<b>2. Dados</b><br/>unidade, alvo y,<br/>atributos x"] --> S["<b>3. Separar</b><br/>treino | teste"]
+  end
+  subgraph L2 [" "]
+    direction LR
+    T["<b>4. Treinar</b><br/>modelo.fit(X, y)"] --> A["<b>5. Avaliar</b><br/>fora da amostra"] --> C["<b>6. Comunicar</b><br/>e decidir"]
+  end
+  L1 --> L2
+  A -- "ajustar" --> T
+  style L1 fill:none,stroke:none
+  style L2 fill:none,stroke:none
+  classDef base fill:#F2F2F2,stroke:#23373B,color:#23373B
+  classDef a3 fill:#FDE9D5,stroke:#EB811B,color:#23373B
+  classDef a45 fill:#E3EEF5,stroke:#2A6F97,color:#23373B
+  class P,D,C base
+  class S,A a3
+  class T a45
