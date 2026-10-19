@@ -1,8 +1,8 @@
 % =====================================================================
-%  Aula 1 — conteúdo das notas (incluído por notas.tex e pela apostila)
-%  Figuras: use apenas o nome (a01_...), o graphicspath resolve.
+%  Aula 2 — conteúdo das notas (incluído por notas.tex e pela apostila)
+%  Figuras: use apenas o nome (a02_...), o graphicspath resolve.
 % =====================================================================
-\aula{1}{Introdução a Python, NumPy e JAX}[Python, NumPy e JAX]
+\aula{2}{Introdução a Python, NumPy e JAX}[Python, NumPy e JAX]
 
 \begin{intuicao}[title={Objetivos da aula}]
 Ao final desta aula você deve ser capaz de: (i) escrever pequenos programas em
@@ -135,7 +135,7 @@ diferença de tempo para o cálculo da inflação acumulada.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.72\linewidth]{a01_laco_vs_vetor}
+  \includegraphics[width=0.72\linewidth]{a02_laco_vs_vetor}
   \caption{Tempo para calcular \cref{eq:a01-acum} com um laço em Python puro e com
   \py{np.prod}. Escalas logarítmicas; a distância vertical constante indica uma
   razão aproximadamente constante entre os tempos.}
@@ -224,7 +224,7 @@ gradiente compilado, é exatamente o que precisaremos para treinar modelos.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.8\linewidth]{a01_jax_transformacoes}
+  \includegraphics[width=0.8\linewidth]{a02_jax_transformacoes}
   \caption{As transformações do JAX recebem uma função e devolvem outra, e por isso se compõem.}
   \label{fig:a01-jax}
 \end{figure}
@@ -264,7 +264,7 @@ jax.vmap(du)(jnp.linspace(0.5, 3, 6))   # em vários pontos de uma vez
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.85\linewidth]{a01_crra_grad}
+  \includegraphics[width=0.85\linewidth]{a02_crra_grad}
   \caption{Utilidade CRRA ($\gamma=2$) e sua derivada obtida com
   \py{jax.grad}, comparada à expressão analítica.}
   \label{fig:a01-crra}

@@ -1,9 +1,9 @@
 \documentclass[aspectratio=169,11pt]{beamer}
 \usetheme{TML}
 
-\aula{2}{O que é Aprendizado de Máquina?}
+\aula{1}{O que é Aprendizado de Máquina?}
 
-\newcommand{\nbdir}{aulas/02-o-que-e-ml/notebooks}
+\newcommand{\nbdir}{aulas/01-o-que-e-ml/notebooks}
 
 \begin{document}
 
@@ -184,7 +184,7 @@
 \begin{frame}{E se mudarmos de domínio?}
   \begin{columns}[c]
     \begin{column}{0.5\textwidth}
-      \includegraphics[width=\linewidth]{a02_gato_cachorro}
+      \includegraphics[width=\linewidth]{a01_gato_cachorro}
     \end{column}
     \begin{column}{0.46\textwidth}
       \Large
@@ -203,7 +203,7 @@
 
 \begin{frame}{O que o computador vê}
   \centering
-  \includegraphics[width=0.54\linewidth]{a02_pixels}
+  \includegraphics[width=0.54\linewidth]{a01_pixels}
   \par\smallskip\raggedright\small
   Cada pixel é um número de 0 (preto) a 255 (branco). A imagem $24\times24$
   vira \alert{uma linha} de $\mX$ com 576 colunas. Uma foto de
@@ -216,7 +216,7 @@
 
 \begin{frame}{Vizinhança: o significado está no arranjo}
   \centering
-  \includegraphics[width=0.6\linewidth]{a02_deslocamento}
+  \includegraphics[width=0.6\linewidth]{a01_deslocamento}
   \par\smallskip\raggedright\small
   O pixel $(12, 7)$, coluna 295 de $\mX$ (contando do zero), é \alert{olho}
   numa imagem e \alert{pelo} na outra. Mudaram 128 colunas e $y$ continua
@@ -307,7 +307,7 @@
 \begin{frame}{Duas culturas}
   \begin{columns}[c]
     \begin{column}{0.6\textwidth}
-      \includegraphics[width=\linewidth]{a02_duas_culturas}
+      \includegraphics[width=\linewidth]{a01_duas_culturas}
     \end{column}
     \begin{column}{0.37\textwidth}
       \textcite{breiman2001cultures}:
@@ -351,7 +351,7 @@
 
 \begin{frame}{Muitos $\hat\beta$ diferentes, quase o mesmo $\hat y$}
   \centering
-  \includegraphics[width=0.8\linewidth]{a02_prever_inferir}
+  \includegraphics[width=0.8\linewidth]{a01_prever_inferir}
   \par\raggedright\small
   1000 amostras de $y = x_1 + x_2 + \varepsilon$, com $\operatorname{corr}(x_1,x_2)=0{,}98$.
   O coeficiente de $x_1$ \alert{oscila muito}; a previsão em $x_0=(1,1)$ \alert{quase não muda}.
@@ -394,12 +394,12 @@
 
 \begin{frame}{A pergunta-chave: temos o alvo $y$?}
   \centering
-  \includegraphics[height=0.78\textheight]{a02_taxonomia}
+  \includegraphics[height=0.78\textheight]{a01_taxonomia}
 \end{frame}
 
 \begin{frame}{As três tarefas em uma imagem}
   \centering
-  \includegraphics[width=\linewidth]{a02_tarefas}
+  \includegraphics[width=\linewidth]{a01_tarefas}
   \par\raggedright\small
   Regressão e classificação \alert{aprendem com respostas conhecidas}.
   O agrupamento \alert{propõe uma estrutura}, e cabe a nós interpretá-la
@@ -476,7 +476,7 @@
 
 \begin{frame}{O fluxo de um projeto}
   \centering
-  \includegraphics[height=0.52\textheight]{a02_fluxo}
+  \includegraphics[height=0.52\textheight]{a01_fluxo}
   \par\medskip\raggedright
   \begin{itemize}\small
     \item \textcolor{tmlaccent}{\textbf{Laranja}}: separar e avaliar sem se enganar (Aula 3)
@@ -536,9 +536,9 @@
 % =====================================================================
 \section{Mãos à obra}
 
-\demo[\nbdir/02_demo.ipynb]{Do problema ao primeiro modelo:\\ preços de imóveis com scikit-learn}
+\demo[\nbdir/01_demo.ipynb]{Do problema ao primeiro modelo:\\ preços de imóveis com scikit-learn}
 
-\lab[\nbdir/02_lab.ipynb]{Crédito e perfis de consumo:\\ classificação e agrupamento}
+\lab[\nbdir/01_lab.ipynb]{Crédito e perfis de consumo:\\ classificação e agrupamento}
 
 \begin{frame}{Para fixar}
   \begin{itemize}\small
@@ -558,7 +558,7 @@
   \textcite{breiman2001cultures}.
   \smallskip
 
-  \textbf{Próxima aula:} como saber se o modelo aprendeu ou apenas decorou?
+  \textbf{Próxima aula:} Python, NumPy e JAX, as ferramentas para abrir os modelos por dentro.
 \end{frame}
 
 \begin{frame}{Referências}

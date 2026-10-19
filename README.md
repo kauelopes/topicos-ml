@@ -5,8 +5,8 @@ e notebooks para o Google Colab. Professor: Kauê Lopes de Moraes.
 
 | Aula | Tema | Notebooks |
 |---|---|---|
-| 1 | Introdução a Python, NumPy e JAX | [demo](aulas/01-python-numpy-jax/notebooks/01_demo.ipynb) · [lab](aulas/01-python-numpy-jax/notebooks/01_lab.ipynb) |
-| 2 | O que é Aprendizado de Máquina? | [demo](aulas/02-o-que-e-ml/notebooks/02_demo.ipynb) · [lab](aulas/02-o-que-e-ml/notebooks/02_lab.ipynb) |
+| 1 | O que é Aprendizado de Máquina? | [demo](aulas/01-o-que-e-ml/notebooks/01_demo.ipynb) · [lab](aulas/01-o-que-e-ml/notebooks/01_lab.ipynb) |
+| 2 | Introdução a Python, NumPy e JAX | [demo](aulas/02-python-numpy-jax/notebooks/02_demo.ipynb) · [lab](aulas/02-python-numpy-jax/notebooks/02_lab.ipynb) |
 | 3 | Treino, Teste e Validação: Aprendendo ou Decorando? | — |
 | 4 | Regressão Linear por Gradiente Descendente | — |
 | 5 | Árvores Aleatórias e Redes Neurais: Aproximadores de Funções | — |

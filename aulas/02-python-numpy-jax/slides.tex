@@ -1,9 +1,9 @@
 \documentclass[aspectratio=169,11pt]{beamer}
 \usetheme{TML}
 
-\aula{1}{Introdução a Python, NumPy e JAX}
+\aula{2}{Introdução a Python, NumPy e JAX}
 
-\newcommand{\nbdir}{aulas/01-python-numpy-jax/notebooks}
+\newcommand{\nbdir}{aulas/02-python-numpy-jax/notebooks}
 
 \begin{document}
 
@@ -29,8 +29,8 @@
         \item \alert{Auditável}: cada decisão está escrita
       \end{itemize}
       \medskip
-      E é a linguagem em que os modelos de aprendizado de máquina são
-      construídos.
+      Na Aula 1, o \py{fit} e o \py{predict} rodaram em Python. Hoje
+      aprendemos a linguagem por trás deles.
     \end{column}
   \end{columns}
 \end{frame}
@@ -246,7 +246,7 @@
       \textbf{Vetorizar} = trocar o laço explícito por uma operação sobre o array.
     \end{column}
     \begin{column}{0.6\textwidth}
-      \includegraphics[width=\linewidth]{a01_laco_vs_vetor}
+      \includegraphics[width=\linewidth]{a02_laco_vs_vetor}
     \end{column}
   \end{columns}
 \end{frame}
@@ -411,7 +411,7 @@
 
 \begin{frame}{Transformações se compõem}
   \centering
-  \includegraphics[width=0.78\linewidth]{a01_jax_transformacoes}
+  \includegraphics[width=0.78\linewidth]{a02_jax_transformacoes}
   \par\medskip\raggedright
   Cada transformação \alert{recebe uma função e devolve outra função}. Por isso
   podemos encadeá-las: \py{jax.jit(jax.grad(perda))} é o motor do treinamento de
@@ -435,7 +435,7 @@
       \end{codigo}
     \end{column}
     \begin{column}{0.52\textwidth}
-      \includegraphics[width=\linewidth]{a01_crra_grad}
+      \includegraphics[width=\linewidth]{a02_crra_grad}
       \small \py{jax.grad} não aproxima por diferenças finitas nem manipula
       símbolos: aplica a \alert{regra da cadeia} sobre as operações executadas.
     \end{column}
@@ -510,9 +510,9 @@
 % =====================================================================
 \section{Mãos à obra}
 
-\demo[\nbdir/01_demo.ipynb]{Do laço ao gradiente:\\ IPCA, MQO e \texttt{jax.grad} ao vivo}
+\demo[\nbdir/02_demo.ipynb]{Do laço ao gradiente:\\ IPCA, MQO e \texttt{jax.grad} ao vivo}
 
-\lab[\nbdir/01_lab.ipynb]{Inflação acumulada em 12 meses\\ com dados do Banco Central}
+\lab[\nbdir/02_lab.ipynb]{Inflação acumulada em 12 meses\\ com dados do Banco Central}
 
 \begin{frame}{Para fixar}
   \begin{itemize}
@@ -525,10 +525,10 @@
   \medskip
   \textbf{Para aprofundar:} \textcite{downey2016} (cap.~1–10); documentação
   \emph{JAX — The Sharp Bits}; \textcite{baydin2018} sobre diferenciação automática;
-  Lista~1 e notas de aula.
+  Lista~2 e notas de aula.
   \medskip
 
-  \textbf{Próxima aula:} o que é, afinal, aprendizado de máquina?
+  \textbf{Próxima aula:} como saber se o modelo aprendeu ou apenas decorou?
 \end{frame}
 
 \begin{frame}{Referências}

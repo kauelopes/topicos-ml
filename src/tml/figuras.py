@@ -27,13 +27,13 @@ def _pasta(aula: str) -> Path:
 
 
 # ---------------------------------------------------------------------
-# Aula 01 — Python, NumPy e JAX
+# Aula 02 — Python, NumPy e JAX
 # ---------------------------------------------------------------------
-def aula01() -> None:
+def aula02() -> None:
     import jax
     import jax.numpy as jnp
 
-    destino = _pasta("01")
+    destino = _pasta("02")
 
     # (1) Utilidade CRRA e utilidade marginal obtida por jax.grad
     gamma = 2.0
@@ -53,7 +53,7 @@ def aula01() -> None:
     ax2.set(title=r"$u'(c)$", xlabel="consumo $c$")
     ax2.legend()
     fig.tight_layout()
-    fig.savefig(destino / "a01_crra_grad.pdf")
+    fig.savefig(destino / "a02_crra_grad.pdf")
     plt.close(fig)
 
     # (2) Laço Python x operação vetorizada (NumPy): tempo por tamanho
@@ -91,18 +91,18 @@ def aula01() -> None:
     ax.set_title(f"Vetorizado ≈ {razao:,.0f}× mais rápido com n = 10⁷".replace(",", "."),
                  fontsize=10)
     fig.tight_layout()
-    fig.savefig(destino / "a01_laco_vs_vetor.pdf")
+    fig.savefig(destino / "a02_laco_vs_vetor.pdf")
     plt.close(fig)
 
 
 # ---------------------------------------------------------------------
-# Aula 02 — O que é aprendizado de máquina?
+# Aula 01 — O que é aprendizado de máquina?
 # ---------------------------------------------------------------------
-def aula02() -> None:
+def aula01() -> None:
     from sklearn.cluster import KMeans
     from sklearn.linear_model import LogisticRegression
 
-    destino = _pasta("02")
+    destino = _pasta("01")
     C = estilo.CORES
     rng = np.random.default_rng(7)
 
@@ -143,7 +143,7 @@ def aula02() -> None:
     axs[2].set(title="Agrupamento: sem y", xlabel="parcela gasta com alimentação",
                ylabel="parcela gasta com lazer")
     fig.tight_layout()
-    fig.savefig(destino / "a02_tarefas.pdf")
+    fig.savefig(destino / "a01_tarefas.pdf")
     plt.close(fig)
 
     # (2) Prever x inferir: coeficientes instáveis, previsões estáveis
@@ -172,10 +172,10 @@ def aula02() -> None:
     a1.set_xlim(1 - lim, 1 + lim)
     a2.set_xlim(2 - lim, 2 + lim)
     fig.tight_layout()
-    fig.savefig(destino / "a02_prever_inferir.pdf")
+    fig.savefig(destino / "a01_prever_inferir.pdf")
     plt.close(fig)
 
-    _a02_pixels(destino)
+    _a01_pixels(destino)
 
 
 # Imagens 24x24 em tons de cinza (0 = preto, 255 = branco), desenhadas com
@@ -238,7 +238,7 @@ def _mostrar(ax, im: np.ndarray, titulo: str = "") -> None:
         ax.set_title(titulo)
 
 
-def _a02_pixels(destino: Path) -> None:
+def _a01_pixels(destino: Path) -> None:
     from matplotlib.patches import Rectangle
 
     C = estilo.CORES
@@ -249,7 +249,7 @@ def _a02_pixels(destino: Path) -> None:
     _mostrar(axs[0], g, r"$y$ = gato")
     _mostrar(axs[1], c, r"$y$ = cachorro")
     fig.tight_layout()
-    fig.savefig(destino / "a02_gato_cachorro.pdf")
+    fig.savefig(destino / "a01_gato_cachorro.pdf")
     plt.close(fig)
 
     # (4) O que o computador vê: um recorte 6x6 em volta do olho esquerdo
@@ -268,7 +268,7 @@ def _a02_pixels(destino: Path) -> None:
         lado.set_color(C["destaque"])
         lado.set_linewidth(2.2)
     fig.tight_layout()
-    fig.savefig(destino / "a02_pixels.pdf")
+    fig.savefig(destino / "a01_pixels.pdf")
     plt.close(fig)
 
     # (5) Vizinhança: o mesmo gato deslocado 2 pixels para a direita
@@ -288,7 +288,7 @@ def _a02_pixels(destino: Path) -> None:
     axs[0].set_xlabel(f"pixel ({i}, {j}) = {g[i, j]:.0f}")
     axs[1].set_xlabel(f"pixel ({i}, {j}) = {desl[i, j]:.0f}")
     fig.tight_layout()
-    fig.savefig(destino / "a02_deslocamento.pdf")
+    fig.savefig(destino / "a01_deslocamento.pdf")
     plt.close(fig)
 
 

@@ -1,7 +1,7 @@
 % =====================================================================
-%  Aula 2 — conteúdo das notas (incluído por notas.tex e pela apostila)
+%  Aula 1 — conteúdo das notas (incluído por notas.tex e pela apostila)
 % =====================================================================
-\aula{2}{O que é Aprendizado de Máquina?}[O que é ML?]
+\aula{1}{O que é Aprendizado de Máquina?}[O que é ML?]
 
 \begin{intuicao}[title={Objetivos da aula}]
 Ao final desta aula você deve ser capaz de: (i) explicar o que significa um
@@ -114,7 +114,7 @@ validação fora da amostra é o critério de qualidade.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.78\linewidth]{a02_duas_culturas}
+  \includegraphics[width=0.78\linewidth]{a01_duas_culturas}
   \caption{As duas culturas de \textcite{breiman2001cultures}. O que muda não é a
   matemática disponível, e sim o produto final que se deseja: $\hat\beta$ ou $\hat y$.}
   \label{fig:a02-culturas}
@@ -138,7 +138,7 @@ a \cref{fig:a02-prever} mostra por quê.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.85\linewidth]{a02_prever_inferir}
+  \includegraphics[width=0.85\linewidth]{a01_prever_inferir}
   \caption{Mil amostras de $n=100$ observações de $y = x_1 + x_2 + \varepsilon$,
   com $\operatorname{corr}(x_1,x_2)=0{,}98$. Em cada amostra estimamos o modelo por
   MQO. O coeficiente de $x_1$ varia muito entre amostras; a previsão no ponto
@@ -181,7 +181,7 @@ A pergunta que organiza a taxonomia é: \emph{observamos o alvo $y$?}
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.82\linewidth]{a02_taxonomia}
+  \includegraphics[width=0.82\linewidth]{a01_taxonomia}
   \caption{Tipos de aprendizado de máquina. Neste curso tratamos dos ramos
   supervisionados; o aprendizado por reforço fica fora do escopo.}
   \label{fig:a02-taxonomia}
@@ -210,7 +210,7 @@ validar os grupos é responsabilidade do analista.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\linewidth]{a02_tarefas}
+  \includegraphics[width=\linewidth]{a01_tarefas}
   \caption{Regressão (prever um número), classificação (prever uma categoria,
   com a fronteira de decisão tracejada) e agrupamento (propor grupos sem rótulos;
   os X marcam os centros encontrados pelo algoritmo $k$-médias). Dados simulados.}
@@ -268,7 +268,7 @@ Aula 3; a etapa em azul (treinar) será aberta por dentro nas Aulas 4 e 5.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\linewidth]{a02_fluxo}
+  \includegraphics[width=\linewidth]{a01_fluxo}
   \caption{Fluxo de um projeto de aprendizado supervisionado. O ciclo
   avaliar–ajustar pode se repetir várias vezes, mas sempre com dados de
   validação; o conjunto de teste é usado uma única vez, no final.}
