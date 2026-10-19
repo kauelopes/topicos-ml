@@ -1,7 +1,7 @@
 \documentclass[aspectratio=169,11pt]{beamer}
 \usetheme{TML}
 
-\aula{2}{Introdução a Python, NumPy e JAX}
+\aula{2}{Computação aplicada: de Python ao aprendizado de máquina}
 
 \newcommand{\nbdir}{aulas/02-python-numpy-jax/notebooks}
 
@@ -10,529 +10,223 @@
 \maketitle
 
 % =====================================================================
-\begin{frame}{Por que um economista deveria programar?}
+\begin{frame}{A pergunta de hoje}
+  \begin{center}
+    \Large Um programa de treinamento para o emprego\\
+    \alert{aumentou a renda} de quem participou?
+  \end{center}
+  \bigskip
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Uma tarefa comum:} calcular a inflação acumulada em 12 meses a
-      partir do IPCA mensal.
+    \begin{column}{0.47\textwidth}
+      \textbf{Como vamos responder}
       \begin{itemize}
-        \item Na planilha: arrastar fórmulas, copiar, colar\ldots
-        \item E quando chegar o dado do mês que vem?
-        \item E para 27 UFs? Para 400 subitens?
+        \item Com dados reais de um experimento famoso
+        \item Escrevendo o código \alert{juntos, ao vivo}
+        \item Cada ferramenta entra quando precisamos dela
       \end{itemize}
     \end{column}
-    \begin{column}{0.46\textwidth}
-      \textbf{Com código:}
+    \begin{column}{0.47\textwidth}
+      \textbf{Como será a aula}
       \begin{itemize}
-        \item \alert{Reprodutível}: alguém roda e obtém o mesmo número
-        \item \alert{Escalável}: 1 série ou 10 mil, mesmo esforço
-        \item \alert{Auditável}: cada decisão está escrita
+        \item[\textcolor{tmlblue}{\textbullet}] 15 min: slides de abertura
+        \item[\textcolor{tmlaccent}{\textbullet}] 90 min: notebook no Colab
+        \item[\textcolor{tmlgreen}{\textbullet}] 15 min: fechamento
       \end{itemize}
-      \medskip
-      Na Aula 1, o \py{fit} e o \py{predict} rodaram em Python. Hoje
-      aprendemos a linguagem por trás deles.
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Roteiro da aula}
-  \setbeamertemplate{section in toc}[sections numbered]
-  \tableofcontents[hideallsubsections]
-  \vfill
-  \small\textcolor{gray}{1h de fundamentos \textbullet{} 30 min de demonstração \textbullet{} 30 min de laboratório}
+% =====================================================================
+\section{As ferramentas}
+
+\begin{frame}{Uma ferramenta para cada etapa}
+  \begin{center}\small
+  \begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.36\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}@{}}
+    \toprule
+    Ferramenta & Para quê & Na aula de hoje \\
+    \midrule
+    \pkg{Python}       & a linguagem: variáveis, listas, \texttt{if}, \texttt{for}, funções & 5 participantes do programa \\
+    \pkg{NumPy}        & contas com vetores e matrizes inteiros & diferença de médias e MQO \\
+    \pkg{pandas}       & tabelas: ler, filtrar, agrupar & a base completa \\
+    \pkg{matplotlib}   & gráficos & comparar os grupos \\
+    \pkg{JAX}          & derivadas automáticas & gradiente descendente \\
+    \pkg{scikit-learn} & modelos de aprendizado de máquina & regressão, floresta, logit \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \medskip
+  \small Cada linha \alert{usa a de cima}: o pandas é feito de NumPy, que é chamado
+  de Python. Por isso começamos pelo básico.
 \end{frame}
 
-% =====================================================================
-\section{O ambiente de trabalho}
-
-\begin{frame}{Google Colab e notebooks Jupyter}
+\begin{frame}{O notebook no Colab}
   \begin{columns}[c]
     \begin{column}{0.55\textwidth}
       \begin{itemize}
-        \item Um \alert{notebook} intercala células de \textbf{código} e de
-              \textbf{texto} (Markdown, com \LaTeX)
-        \item O \alert{kernel} guarda o estado: variáveis vivem entre células
-        \item O Colab roda no navegador, sem instalar nada, com GPU gratuita
+        \item Um \alert{notebook} alterna células de \textbf{texto} e de \textbf{código}
         \item \texttt{Shift+Enter} executa a célula e avança
+        \item As variáveis ficam na memória entre as células
+        \item Nas células \textbf{Sua vez}, troque o \texttt{...} por código.
+              A resposta fica escondida logo abaixo
       \end{itemize}
     \end{column}
     \begin{column}{0.4\textwidth}
       \begin{atencao}
-        \small O que importa é a \textbf{ordem em que você executou} as células,
-        não a ordem em que elas aparecem. Na dúvida:
-        \emph{Ambiente de execução $\to$ Reiniciar e executar tudo}.
+        \small O que vale é a \textbf{ordem em que você executou}, não a ordem
+        na tela. Na dúvida: \emph{Ambiente de execução $\to$ Reiniciar e
+        executar tudo}.
       \end{atencao}
     \end{column}
   \end{columns}
 \end{frame}
 
 % =====================================================================
-\section{Python essencial}
+\section{Os dados: o experimento NSW}
 
-\begin{frame}[fragile]{Variáveis e tipos}
-  Uma variável é um \alert{nome} associado a um \alert{valor}. O tipo é inferido.
-  \begin{codigo}
-    selic = 15.0                 # float: número real
-    n_meses = 12                 # int: inteiro
-    pais = "Brasil"              # str: texto
-    acima_da_meta = True         # bool: verdadeiro/falso
-
-    type(selic)                  # <class 'float'>
-    taxa_mensal = (1 + selic / 100) ** (1 / n_meses) - 1
-    print(f"Selic mensal equivalente: {taxa_mensal:.4%}")
-  \end{codigo}
-  \begin{atencao}
-    \small Ponto flutuante não é exato: \py{0.1 + 0.2 == 0.3} é \py{False}.
-    Compare números reais com tolerância (\py{abs(a - b) < 1e-9} ou \py{math.isclose}).
-  \end{atencao}
-\end{frame}
-
-\begin{frame}[fragile]{Errar faz parte: como ler uma mensagem de erro}
+\begin{frame}{O programa NSW}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \begin{codigo}
-        inflacao = "5"   # veio como texto
-        inflacao + 3
-        # TypeError: can only concatenate
-        #   str (not "int") to str
-
-        float(inflacao) + 3   # 8.0
-      \end{codigo}
-      \small Leia a \alert{última linha} primeiro: ela diz o \textbf{tipo} do
-      erro e o motivo. As linhas acima mostram onde ele aconteceu.
+    \begin{column}{0.55\textwidth}
+      \textbf{National Supported Work Demonstration}
+      \begin{itemize}
+        \item Programa americano dos anos 1970
+        \item Emprego subsidiado e acompanhamento para pessoas com muita
+              dificuldade de entrar no mercado de trabalho
+        \item As vagas foram \alert{sorteadas} entre os candidatos
+      \end{itemize}
     \end{column}
-    \begin{column}{0.46\textwidth}
-      \small
-      \begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.6\linewidth}@{}}
-        \toprule
-        Erro & Causa mais comum \\
-        \midrule
-        \py{NameError}        & nome digitado errado ou célula não executada \\
-        \py{TypeError}        & operação com o tipo errado (texto + número) \\
-        \py{IndexError}       & índice além do fim da lista \\
-        \py{IndentationError} & recuo inconsistente num bloco \\
-        \bottomrule
-      \end{tabular}
+    \begin{column}{0.4\textwidth}
+      \begin{exemplo}[title={Por que o sorteio importa}]
+        \small Sorteados (\textbf{tratados}) e não sorteados (\textbf{controles})
+        são parecidos em tudo, exceto no programa. A diferença de renda
+        depois do programa é o seu \alert{efeito}.
+      \end{exemplo}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}[fragile]{Coleções: listas e dicionários}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Lista}: sequência ordenada
-      \begin{codigo}
-        ipca = [0.16, 0.43, 0.56, 0.43]
-        ipca[0]     # 0.16 (índice 0!)
-        ipca[-1]    # 0.43 (último)
-        ipca[1:3]   # [0.43, 0.56]
-        ipca.append(0.26)
-        len(ipca)   # 5
-      \end{codigo}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Dicionário}: pares chave $\to$ valor
-      \begin{codigo}
-        metas = {
-            "centro": 3.0,
-            "tolerancia": 1.5,
-        }
-        metas["centro"]   # 3.0
-        teto = (metas["centro"]
-                + metas["tolerancia"])
-      \end{codigo}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Condicionais}
-  \begin{codigo}
-    def avaliar(inflacao_12m, centro=3.0, tolerancia=1.5):
-        if inflacao_12m > centro + tolerancia:
-            return "acima do teto"
-        elif inflacao_12m < centro - tolerancia:
-            return "abaixo do piso"
-        else:
-            return "dentro do intervalo"
-
-    avaliar(5.2)     # 'acima do teto'
-  \end{codigo}
-  \begin{itemize}
-    \item A \alert{indentação} define os blocos (não há chaves nem \texttt{end})
-    \item Comparações: \py{==  !=  <  <=  >  >=}; combinação: \py{and  or  not}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Laços e funções}
-  Inflação acumulada: $\displaystyle \pi^{\text{acum}} = \prod_{t=1}^{T}(1+\pi_t) - 1$
-  \begin{codigo}
-    def acumulada(taxas_pct):
-        """Inflação acumulada (%) a partir de taxas mensais (%)."""
-        fator = 1.0
-        for pi in taxas_pct:          # percorre cada elemento
-            fator = fator * (1 + pi / 100)
-        return 100 * (fator - 1)
-
-    acumulada([0.16, 0.43, 0.56, 0.43])   # 1.5889...
-  \end{codigo}
-  \begin{itemize}
-    \item \py{def} cria uma função: \alert{entradas} $\to$ \alert{saída} (\py{return})
-    \item A \emph{docstring} documenta o que a função faz
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{O laço passo a passo: simule o computador}
-  \begin{columns}[c]
-    \begin{column}{0.46\textwidth}
-      \centering\small
-      \begin{tabular}{@{}clc@{}}
-        \toprule
-        Volta & \py{pi} & \py{fator} depois da volta \\
-        \midrule
-        início & ---  & 1,0000 \\
-        1      & 0,16 & 1,0016 \\
-        2      & 0,43 & 1,0059 \\
-        3      & 0,56 & 1,0115 \\
-        4      & 0,43 & 1,0159 \\
-        \bottomrule
-      \end{tabular}
-      \par\medskip
-      \py{return}: $100 \times (1{,}0159 - 1) \approx 1{,}589$\%
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \begin{intuicao}
-        \small Cada volta do \py{for} pega o próximo elemento e
-        \alert{atualiza} \py{fator}. Montar essa tabela com lápis é a melhor
-        forma de entender (e de depurar) um laço.
-      \end{intuicao}
-      \begin{conexao}
-        \small É a coluna de ``fator acumulado'' que você arrastaria numa
-        planilha: cada linha da tabela é uma linha da planilha.
-      \end{conexao}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Teste rápido: o que o Python devolve?}
-  \begin{codigo}
-    ipca = [0.16, 0.43, 0.56, 0.43]
-    ipca[-2:]        # (a)
-    ipca * 2         # (b)
-    avaliar(4.5)     # (c)  centro 3.0, tolerância 1.5
-  \end{codigo}
-  \begin{uncoverenv}<2>
-  \begin{enumerate}[(a)]\small
-    \item \py{[0.56, 0.43]}: os dois últimos elementos.
-    \item \py{[0.16, 0.43, 0.56, 0.43, 0.16, 0.43, 0.56, 0.43]}: a lista é
-          \alert{repetida}, não multiplicada! Para fazer conta com vetores
-          precisamos do NumPy.
-    \item \py{'dentro do intervalo'}: $4{,}5 > 4{,}5$ é falso. Atenção às
-          fronteiras ($>$ \emph{versus} $\geq$).
+\begin{frame}{A pergunta de LaLonde}
+  \textcite{lalonde1986} usou o experimento como \alert{gabarito}:
+  \begin{enumerate}
+    \item O sorteio dá o efeito verdadeiro do programa.
+    \item Agora finja que não houve sorteio: compare os tratados com pessoas de
+          uma pesquisa domiciliar (CPS, PSID).
+    \item Os métodos econométricos usuais \alert{recuperam o gabarito}?
   \end{enumerate}
-  \end{uncoverenv}
-\end{frame}
-
-% =====================================================================
-\section{NumPy: computação vetorizada}
-
-\begin{frame}{Por que não basta usar listas?}
-  \begin{columns}[c]
-    \begin{column}{0.38\textwidth}
-      Um \alert{array} NumPy é um bloco de memória com elementos do
-      \textbf{mesmo tipo}. Operações sobre o array inteiro rodam em código
-      compilado (C), não no interpretador Python.
-      \medskip
-
-      \textbf{Vetorizar} = trocar o laço explícito por uma operação sobre o array.
-    \end{column}
-    \begin{column}{0.6\textwidth}
-      \includegraphics[width=\linewidth]{a02_laco_vs_vetor}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Arrays: criação, forma e indexação}
-  \begin{codigo}
-    import numpy as np
-
-    pi = np.array([0.16, 0.43, 0.56, 0.43])   # vetor, shape (4,)
-    X = np.array([[1, 2.0], [1, 3.5], [1, 1.2]])  # matriz, shape (3, 2)
-
-    X.shape          # (3, 2): 3 observações, 2 variáveis
-    X[:, 1]          # segunda coluna -> array([2. , 3.5, 1.2])
-    X[X[:, 1] > 1.5] # filtro booleano: linhas com x > 1.5
-
-    np.zeros(5), np.ones((2, 3)), np.linspace(0, 1, 11)
-  \end{codigo}
-  \begin{itemize}
-    \item Convenção do curso: \alert{linhas = observações}, \alert{colunas = variáveis}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Eixos: resumir por coluna ou por linha?}
-  \begin{columns}[c]
-    \begin{column}{0.5\textwidth}
-      \centering\small
-      \begin{tabular}{@{}r|cc|c@{}}
-        & \textbf{const.} & \textbf{renda} & \py{axis=1} \\
-        \hline
-        obs.~1 & 1 & 2,0 & 1,50 \\
-        obs.~2 & 1 & 3,5 & 2,25 \\
-        obs.~3 & 1 & 1,2 & 1,10 \\
-        \hline
-        \py{axis=0} & 1,00 & 2,23 & \\
-      \end{tabular}
-      \par\medskip
-      \begin{codigo}
-        X.mean(axis=0)  # [1.  , 2.23]
-        X.mean(axis=1)  # [1.5 , 2.25, 1.1]
-      \end{codigo}
-    \end{column}
-    \begin{column}{0.46\textwidth}
-      \begin{intuicao}
-        \small \py{axis=0} \alert{percorre as linhas} e devolve um número por
-        coluna: a média de cada variável. É o que quase sempre queremos.
-      \end{intuicao}
-      \begin{atencao}
-        \small \py{X.mean()} sem \py{axis} tira a média de \textbf{todos} os
-        elementos, misturando variáveis.
-      \end{atencao}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Operações vetorizadas e \emph{broadcasting}}
-  \begin{codigo}
-    acum = 100 * (np.prod(1 + pi / 100) - 1)     # sem laço!
-
-    salarios = np.array([2500., 4000., 7200.])  # nominais
-    deflator = np.array([1.00, 1.05, 1.11])     # índice de preços
-    reais = salarios / deflator                 # elemento a elemento
-
-    X_pad = (X - X.mean(axis=0)) / X.std(axis=0) # (3,2) - (2,) -> (3,2)
-  \end{codigo}
-  \begin{intuicao}
-    \small \emph{Broadcasting}: quando as formas diferem, o NumPy ``estica'' a
-    menor ao longo dos eixos faltantes. Em \py{X - X.mean(axis=0)}, o vetor de
-    médias (uma por coluna) é subtraído de cada linha.
-  \end{intuicao}
-\end{frame}
-
-\begin{frame}[fragile]{Álgebra matricial: MQO em uma linha}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \begin{conexao}
-        \small Modelo $\vy = \mX\vbeta + \ve$. O estimador de MQO resolve
-        \[ (\mX\T\mX)\,\hvbeta = \mX\T\vy. \]
-      \end{conexao}
-      \small Ao programar, \alert{resolva o sistema}; não calcule a inversa
-      $(\mX\T\mX)^{-1}$ explicitamente (mais lento e numericamente instável).
-    \end{column}
-    \begin{column}{0.47\textwidth}
-      \begin{codigo}
-        rng = np.random.default_rng(42)
-        n = 500
-        x = rng.normal(size=n)
-        X = np.column_stack(
-              [np.ones(n), x])
-        y = 1.0 + 2.0 * x \
-            + rng.normal(size=n)
-
-        beta = np.linalg.solve(
-              X.T @ X, X.T @ y)
-        # array([0.98, 2.03])
-      \end{codigo}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Você já fazia isso: da planilha e do Stata ao NumPy}
-  \centering\small
-  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.32\textwidth}
-                    >{\raggedright\arraybackslash}p{0.2\textwidth}
-                    >{\raggedright\arraybackslash}p{0.4\textwidth}@{}}
-    \toprule
-    Planilha & Stata & NumPy \\
-    \midrule
-    uma coluna de dados & uma variável & um array 1D (uma coluna de \py{X}) \\
-    fórmula arrastada & \texttt{gen r = s / d} & \py{r = s / d} (vetorizado) \\
-    \texttt{=MÉDIA(B2:B500)} & \texttt{summarize} & \py{X.mean(axis=0)} \\
-    suplemento de regressão & \texttt{reg y x} & \py{np.linalg.solve(X.T @ X, X.T @ y)} \\
-    planilha com cliques & \emph{do-file} & notebook ou script \\
-    \bottomrule
-  \end{tabular}
-  \par\medskip\raggedright
+  \smallskip
+  A resposta foi, em geral, \textbf{não}, e o artigo virou referência em
+  avaliação de políticas. Usaremos a subamostra de homens de
+  \textcite{dehejia1999}: 185 tratados e 260 controles, mais 15.992 homens da CPS.
   \begin{conexao}
-    \small A lógica é a mesma; a diferença é que no NumPy \alert{escrevemos a
-    conta}. Por isso, na Aula~4, trocaremos a fórmula do MQO por outro método
-    de treino sem mudar de ferramenta.
+    \small Com sorteio, a diferença de médias é o MQO de $y$ numa constante e numa
+    \emph{dummy} de tratamento. Vamos conferir isso no código.
   \end{conexao}
 \end{frame}
 
-\begin{frame}[fragile]{Teste rápido: formas e \emph{broadcasting}}
-  \begin{codigo}
-    X = np.ones((3, 2))
-    X.mean(axis=0).shape             # (a)
-    X + np.array([10, 20])           # (b)
-    X + np.array([1, 2, 3])          # (c)
-  \end{codigo}
-  \begin{uncoverenv}<2>
-  \begin{enumerate}[(a)]\small
-    \item \py{(2,)}: uma média por coluna.
-    \item Funciona, com forma \py{(3, 2)}: o vetor \py{[10, 20]} é somado a cada linha.
-    \item \py{ValueError}: as formas \py{(3, 2)} e \py{(3,)} não combinam. O
-          \emph{broadcasting} alinha as formas \alert{pela direita}: 2 contra 3.
-  \end{enumerate}
-  \end{uncoverenv}
-\end{frame}
-
-% =====================================================================
-\section{JAX: NumPy que deriva e compila}
-
-\begin{frame}{O que é o JAX?}
-  Biblioteca do Google com a \alert{mesma interface do NumPy} e três
-  transformações de funções:
-  \begin{center}\small
-  \begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.42\textwidth}l@{}}
+\begin{frame}{As variáveis}
+  \begin{center}
+  \begin{tabular}{@{}ll@{}}
     \toprule
-    Transformação & O que faz & Onde usaremos \\
+    Variável & Significado \\
     \midrule
-    \py{jax.grad} & derivada/gradiente \alert{exato} de uma função & treinar modelos (Aulas 4–5) \\
-    \py{jax.jit}  & compila a função (XLA) para CPU, GPU ou TPU & acelerar o treino \\
-    \py{jax.vmap} & vetoriza uma função escrita para um único ponto & avaliar em lotes \\
+    \texttt{treat} & 1 se foi sorteado para o programa \\
+    \texttt{age}, \texttt{education} & idade e anos de estudo \\
+    \texttt{black}, \texttt{hispanic}, \texttt{married} & raça/etnia e estado civil (\emph{dummies}) \\
+    \texttt{nodegree} & 1 se não concluiu o ensino médio \\
+    \texttt{re74}, \texttt{re75} & renda anual antes do programa (US\$) \\
+    \texttt{re78} & renda anual depois do programa (US\$): o \alert{resultado} \\
     \bottomrule
   \end{tabular}
   \end{center}
-  \begin{atencao}
-    \small Arrays JAX são \textbf{imutáveis}: em vez de \py{x[0] = 1}, escreva
-    \py{x = x.at[0].set(1)}. Números aleatórios exigem uma \emph{chave} explícita.
-  \end{atencao}
-\end{frame}
-
-\begin{frame}{Transformações se compõem}
-  \centering
-  \includegraphics[width=0.78\linewidth]{a02_jax_transformacoes}
-  \par\medskip\raggedright
-  Cada transformação \alert{recebe uma função e devolve outra função}. Por isso
-  podemos encadeá-las: \py{jax.jit(jax.grad(perda))} é o motor do treinamento de
-  modelos que construiremos nas Aulas~4 e~5.
-\end{frame}
-
-\begin{frame}[fragile]{Diferenciação automática: utilidade marginal}
-  \begin{columns}[T]
-    \begin{column}{0.46\textwidth}
-      Utilidade CRRA: $u(c) = \dfrac{c^{1-\gamma}}{1-\gamma}$, \quad $u'(c) = c^{-\gamma}$
-      \begin{codigo}
-        import jax
-        import jax.numpy as jnp
-
-        gamma = 2.0
-        def u(c):
-            return c**(1-gamma) / (1-gamma)
-
-        du = jax.grad(u)  # nova função!
-        du(1.5)           # 0.444 = 1.5**-2
-      \end{codigo}
-    \end{column}
-    \begin{column}{0.52\textwidth}
-      \includegraphics[width=\linewidth]{a02_crra_grad}
-      \small \py{jax.grad} não aproxima por diferenças finitas nem manipula
-      símbolos: aplica a \alert{regra da cadeia} sobre as operações executadas.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Três formas de obter $u'(1{,}5)$}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{1. À mão:} $u'(c) = c^{-\gamma} = 1{,}5^{-2} = 0{,}444444$.
-      Exata, mas trabalhosa em modelos grandes.
-      \smallskip
-
-      \textbf{2. Diferenças finitas:} $\dfrac{u(c+h) - u(c)}{h}$
-      \par\smallskip\centering\small
-      \begin{tabular}{@{}lc@{}}
-        \toprule
-        $h$ & aproximação \\
-        \midrule
-        $10^{-2}$  & 0,441501 \\
-        $10^{-6}$  & 0,444444 \\
-        $10^{-13}$ & 0,444089 \\
-        \bottomrule
-      \end{tabular}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{3. Automática (\py{jax.grad}):} exata e sem derivar nada à mão.
-      \smallskip
-      \begin{atencao}
-        \small $h$ grande erra pela aproximação; $h$ pequeno demais erra pelo
-        arredondamento, o mesmo problema de \py{0.1 + 0.2}.
-      \end{atencao}
-      \begin{intuicao}
-        \small Treinar exige o gradiente em milhares de parâmetros, a cada
-        passo. Só a forma 3 escala.
-      \end{intuicao}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Prévia: o gradiente de uma função de perda}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      Erro quadrático médio como função dos parâmetros:
-      \[ \loss(\vbeta) = \tfrac{1}{n}\norm{\vy - \mX\vbeta}^2 \]
-      \[ \grad_{\vbeta}\loss = -\tfrac{2}{n}\mX\T(\vy - \mX\vbeta) \]
-      \begin{conexao}
-        \small Igualar esse gradiente a zero dá exatamente as equações normais do
-        MQO. Na Aula~4 vamos \alert{caminhar} na direção oposta ao gradiente em vez
-        de resolvê-las.
-      \end{conexao}
-    \end{column}
-    \begin{column}{0.47\textwidth}
-      \begin{codigo}
-        def perda(beta, X, y):
-            r = y - X @ beta
-            return jnp.mean(r**2)
-
-        g = jax.grad(perda)  # derivada em beta
-        b0 = jnp.zeros(2)
-        g(b0, X, y)
-
-        # confere com a fórmula analítica:
-        -2 / n * X.T @ (y - X @ b0)
-
-        perda_rapida = jax.jit(perda)
-      \end{codigo}
-    \end{column}
-  \end{columns}
+  \medskip
+  \small Arquivos públicos na página de Rajeev Dehejia no NBER. O notebook baixa
+  tudo sozinho (e tem um plano~B simulado se a internet falhar).
 \end{frame}
 
 % =====================================================================
 \section{Mãos à obra}
 
-\demo[\nbdir/02_demo.ipynb]{Do laço ao gradiente:\\ IPCA, MQO e \texttt{jax.grad} ao vivo}
+\demo[\nbdir/02_demo.ipynb]{Do Python ao aprendizado de máquina:\\ avaliando o programa NSW}
 
-\lab[\nbdir/02_lab.ipynb]{Inflação acumulada em 12 meses\\ com dados do Banco Central}
+% =====================================================================
+\section{Fechamento}
+
+\begin{frame}{O que aprendemos}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Ferramentas}
+      \begin{itemize}\small
+        \item \pkg{Python}: tipos, listas, dicionários, \texttt{if}, \texttt{for}, funções
+        \item \pkg{NumPy}: vetorização, máscaras, MQO em uma linha
+        \item \pkg{pandas}: ler, filtrar, \texttt{groupby}, \texttt{concat}
+        \item \pkg{JAX}: \texttt{grad} e gradiente descendente
+        \item \pkg{scikit-learn}: \texttt{fit}/\texttt{predict}, regressão,
+              floresta, logit
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \textbf{Sobre o programa}\par\smallskip
+      \small
+      \begin{tabular}{@{}lr@{}}
+        \toprule
+        Comparação & Efeito (US\$) \\
+        \midrule
+        Experimento & \alert{1.794} \\
+        Tratados $\times$ CPS & $-8.498$ \\
+        $\times$ CPS, com controles & 699 \\
+        \bottomrule
+      \end{tabular}
+      \par\medskip
+      O grupo de comparação errado \alert{inverte o sinal}.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Para estudar em casa}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Kaggle Learn}\par
+      \small\href{https://www.kaggle.com/learn}{kaggle.com/learn}
+      \begin{itemize}\small
+        \item Cursos curtos, gratuitos e no navegador
+        \item Na ordem: \emph{Python}, \emph{Pandas}, \emph{Data Visualization},
+              \emph{Intro to Machine Learning}
+        \item Mesmo formato de notebook da aula
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{LeetCode}\par
+      \small\href{https://leetcode.com/studyplan/}{leetcode.com/studyplan}
+      \begin{itemize}\small
+        \item Problemas curtos de lógica de programação
+        \item Comece pelos fáceis (\emph{Easy}), em Python
+        \item Há planos de estudo de pandas
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \bigskip
+  \begin{intuicao}[title={A dica mais importante}]
+    \small Fluência vem de \alert{repetição}: 20 minutos por dia valem mais que
+    uma tarde por semana. Refaça o notebook de hoje do zero, sem olhar.
+  \end{intuicao}
+\end{frame}
 
 \begin{frame}{Para fixar}
   \begin{itemize}
-    \item Python: variáveis, tipos, coleções, \py{if}, \py{for}, \py{def}
-    \item NumPy: arrays com \py{shape}; operações vetorizadas e
-          \emph{broadcasting}; álgebra com \py{@} e \py{np.linalg.solve}
-    \item JAX: interface do NumPy + \py{grad}, \py{jit}, \py{vmap}
-    \item O gradiente de uma perda é o \alert{elo} entre econometria e treinamento de modelos
+    \item Python $\to$ NumPy $\to$ pandas: cada camada faz a de baixo trabalhar
+          por nós
+    \item Com sorteio, diferença de médias $=$ MQO com \emph{dummy} $=$ efeito do programa
+    \item Sem sorteio, compare quem é comparável: o logit mostrou que os
+          grupos da CPS eram muito diferentes
+    \item O gradiente descendente chega ao MQO sem fórmula, se o passo
+          $\lr$ for bem escolhido
+    \item O mais sofisticado nem sempre vence: compare com a média e com a
+          regressão linear
   \end{itemize}
   \medskip
-  \textbf{Para aprofundar:} \textcite{downey2016} (cap.~1–10); documentação
-  \emph{JAX — The Sharp Bits}; \textcite{baydin2018} sobre diferenciação automática;
-  Lista~2 e notas de aula.
-  \medskip
-
   \textbf{Próxima aula:} como saber se o modelo aprendeu ou apenas decorou?
 \end{frame}
 
 \begin{frame}{Referências}
-  \nocite{harris2020,bradbury2018}
   \printbibliography[heading=none]
 \end{frame}
 
